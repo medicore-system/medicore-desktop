@@ -1,0 +1,34 @@
+.ciudad-view {
+    -fx-background-color: #00FF00;
+}
+
+.titulo {
+    -fx-font-family: "Hervetica";
+    -fx-font-style: italic;
+    -fx-font-size: 20px;
+    -fx-text-fill: #ffffff;
+}
+
+.nombre {
+    -fx-max-width: 100;
+    -fx-min-height: 40;
+    -fx-background-color: #BA9E9B;
+}
+
+#crear {
+    -fx-background-color: #A38A43;
+    -fx-border-width: 2;
+
+}
+
+#crear:hover {
+    -fx-cursor: hand;
+    -fx-background-color: #6B5C31;
+}
+
+#crear:focused {
+    -fx-background-color: #6B5C31;
+    -fx-border-width: 2;
+    -fx-border-radius:8;
+    -fx-border-color: #FF0000;
+}

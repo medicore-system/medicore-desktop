@@ -1,0 +1,19 @@
+.mainLayout {
+    -fx-background-color: #ffffff;
+}
+
+.button {
+    -fx-max-width: 200;
+    -fx-min-height: 50;
+    -fx-border-radius: 1;
+}
+
+.button:hover {
+    -fx-cursor: hand;
+}
+
+.button:focused {
+    -fx-border-width: 2;
+    -fx-border-radius:8;
+    -fx-border-color: #000000;
+}

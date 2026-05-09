@@ -3,25 +3,21 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import views.mainLayout.MainLayout;
 
 public class Main extends Application {
 
     @Override
     public void start(Stage stage) {
-        //CREAMOS UN BOTON
-        Button button = new Button("Presióname");
-
-        StackPane root = new StackPane(button);
-
-        Scene scene = new Scene(root, 500, 400);
-
-        // AQUI CARGAMOS LA HOJA DE ESTILOS QUE VAMOS A APLICAR PARA EL EJEMPLO
-        scene.getStylesheets().add(
-                getClass().getResource("styles/app.css").toExternalForm()
-        );
-
-        stage.setTitle("Medicore-ADMIN");
+        //Creamos el nodo raiz que es el panel principal que contiene el sidebar dinamico
+        MainLayout root = new MainLayout();
+        //Creamos la scene que guarda el panel a mostrar en el stage
+        Scene scene = new Scene(root, 1000, 700);
+        //Añadimos nuestra hoja de estilos global
+        scene.getStylesheets().add(getClass().getResource("styles/app.css").toExternalForm());
+        //Añadimos al Stage toda nuestra scene ya lista para mostrar
         stage.setScene(scene);
+        stage.setTitle("Medicore-ADMIN");
         stage.show();
     }
 
