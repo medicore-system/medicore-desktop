@@ -1,0 +1,30 @@
+.hospital-view {
+    -fx-background-color: #ffffff;
+}
+
+.titulo {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
+
+#buscador {
+    -fx-max-width: 320;
+    -fx-padding: 8 12;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-border-color: #d1d5db;
+    -fx-prompt-text-fill: #9ca3af;
+}
+
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f9fafb;
+    -fx-font-weight: bold;
+    -fx-text-fill: #374151;
+}
