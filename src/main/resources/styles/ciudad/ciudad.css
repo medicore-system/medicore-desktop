@@ -1,34 +1,325 @@
+/* ================================================= */
+/* FONDO GENERAL */
+/* ================================================= */
+
 .ciudad-view {
-    -fx-background-color: #00FF00;
+
+    -fx-background-color: #F4F7F9;
 }
+
+/* ================================================= */
+/* HEADER SUPERIOR */
+/* ================================================= */
+
+.header-superior {
+
+    -fx-background-color: #EAF0F2;
+
+    -fx-min-height: 90px;
+
+    -fx-pref-height: 90px;
+
+    -fx-max-width: Infinity;
+}
+
+/* ================================================= */
+/* TITULOS */
+/* ================================================= */
 
 .titulo {
-    -fx-font-family: "Hervetica";
-    -fx-font-style: italic;
-    -fx-font-size: 20px;
-    -fx-text-fill: #ffffff;
+
+    -fx-font-size: 28px;
+
+    -fx-font-weight: bold;
+
+    -fx-text-fill: #1F2937;
 }
 
-.nombre {
-    -fx-max-width: 100;
-    -fx-min-height: 40;
-    -fx-background-color: #BA9E9B;
+.subtitulo {
+
+    -fx-font-size: 15px;
+
+    -fx-text-fill: #7B8794;
 }
 
-#crear {
-    -fx-background-color: #A38A43;
-    -fx-border-width: 2;
+/* ================================================= */
+/* BUSCADOR */
+/* ================================================= */
 
+.buscar {
+
+    -fx-background-color: #EAF0F2;
+
+    -fx-background-radius: 18;
+
+    -fx-border-radius: 18;
+
+    -fx-pref-width: 320px;
+
+    -fx-pref-height: 45px;
+
+    -fx-font-size: 14px;
+
+    -fx-padding: 0 15 0 15;
 }
 
-#crear:hover {
+/* ================================================= */
+/* BOTON NUEVA CIUDAD */
+/* ================================================= */
+
+.btn-nueva {
+
+    -fx-background-color: #29485A;
+
+    -fx-text-fill: white;
+
+    -fx-font-size: 15px;
+
+    -fx-font-weight: bold;
+
+    -fx-background-radius: 18;
+
+    -fx-pref-width: 190px;
+
+    -fx-pref-height: 45px;
+}
+
+.btn-nueva:hover {
+
     -fx-cursor: hand;
-    -fx-background-color: #6B5C31;
+
+    -fx-background-color: #1E3543;
 }
 
-#crear:focused {
-    -fx-background-color: #6B5C31;
+/* ================================================= */
+/* CONTENEDOR TABLA */
+/* ================================================= */
+
+.contenedor-tabla {
+
+    -fx-background-color: #DDEEF3;
+
+    -fx-background-radius: 35;
+
+    -fx-padding: 25;
+}
+
+/* ================================================= */
+/* TABLA */
+/* ================================================= */
+
+.tabla {
+
+    -fx-background-color: transparent;
+
+    -fx-border-color: transparent;
+
+    -fx-table-cell-border-color: transparent;
+
+    -fx-padding: 0;
+}
+
+/* ================================================= */
+/* HEADER TABLA */
+/* ================================================= */
+
+.table-view .column-header-background {
+
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+
+    -fx-background-color: transparent;
+
+    -fx-border-color: transparent;
+
+    -fx-pref-height: 60px;
+}
+
+.table-view .column-header .label {
+
+    -fx-text-fill: #29485A;
+
+    -fx-font-size: 18px;
+
+    -fx-font-weight: bold;
+
+    -fx-alignment: CENTER;
+}
+
+/* ================================================= */
+/* FILAS */
+/* ================================================= */
+
+.table-row-cell {
+
+    -fx-background-color: white;
+
+    -fx-border-color: #D9E2EC;
+
+    -fx-border-width: 0 0 1 0;
+
+    -fx-pref-height: 70px;
+}
+
+.table-row-cell:hover {
+
+    -fx-background-color: #F5FAFC;
+}
+
+/* ================================================= */
+/* CELDAS */
+/* ================================================= */
+
+.table-cell {
+
+    -fx-alignment: CENTER;
+
+    -fx-font-size: 15px;
+
+    -fx-text-fill: #1F2937;
+
+    -fx-border-color: transparent;
+}
+
+/* ================================================= */
+/* SCROLL */
+/* ================================================= */
+
+.table-view .scroll-bar:horizontal {
+
+    -fx-opacity: 0;
+
+    -fx-pref-height: 0;
+}
+
+.table-view .scroll-bar:vertical {
+
+    -fx-background-color: transparent;
+}
+
+.table-view .scroll-bar:vertical .thumb {
+
+    -fx-background-color: #B8C7CE;
+
+    -fx-background-radius: 10;
+}
+
+/* ================================================= */
+/* ESQUINAS */
+/* ================================================= */
+
+.table-view,
+.table-view .corner {
+
+    -fx-background-color: transparent;
+}
+
+/* ================================================= */
+/* MODAL */
+/* ================================================= */
+
+.modal-titulo {
+
+    -fx-font-size: 28px;
+
+    -fx-font-weight: bold;
+
+    -fx-text-fill: #1F2937;
+}
+
+.text-field,
+.combo-box {
+
+    -fx-pref-height: 42px;
+
+    -fx-background-radius: 10;
+
+    -fx-border-radius: 10;
+
+    -fx-border-color: #D1D5DB;
+
+    -fx-font-size: 14px;
+}
+
+.text-field:focused,
+.combo-box:focused {
+
+    -fx-border-color: #355C7D;
+
     -fx-border-width: 2;
-    -fx-border-radius:8;
-    -fx-border-color: #FF0000;
+}
+
+/* ================================================= */
+/* BOTONES MODAL */
+/* ================================================= */
+
+.btn-cancelar {
+
+    -fx-background-color: white;
+
+    -fx-border-color: #D1D5DB;
+
+    -fx-border-radius: 10;
+
+    -fx-background-radius: 10;
+
+    -fx-pref-width: 120px;
+
+    -fx-pref-height: 42px;
+}
+
+.btn-guardar {
+
+    -fx-background-color: #355C7D;
+
+    -fx-text-fill: white;
+
+    -fx-font-weight: bold;
+
+    -fx-background-radius: 10;
+
+    -fx-pref-width: 170px;
+
+    -fx-pref-height: 42px;
+}
+
+.btn-guardar:hover {
+
+    -fx-background-color: #264653;
+
+    -fx-cursor: hand;
+}
+
+/* ================================================= */
+/* BOTON EDITAR */
+/* ================================================= */
+
+.btn-editar {
+
+    -fx-background-color: #355C7D;
+
+    -fx-text-fill: white;
+
+    -fx-font-size: 16px;
+
+    -fx-font-weight: bold;
+
+    -fx-background-radius: 50;
+
+    -fx-min-width: 40px;
+
+    -fx-min-height: 40px;
+
+    -fx-max-width: 40px;
+
+    -fx-max-height: 40px;
+}
+
+.btn-editar:hover {
+
+    -fx-background-color: #264653;
+
+    -fx-cursor: hand;
 }
