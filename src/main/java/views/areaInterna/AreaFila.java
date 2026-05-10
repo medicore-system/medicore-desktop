@@ -12,7 +12,6 @@ public class AreaFila {
     private final StringProperty nombre;
     private final StringProperty tipo;
     private final StringProperty descripcion;
-    private final StringProperty estado;
     private final StringProperty codigoAreaInterna;
 
     /**
@@ -22,16 +21,14 @@ public class AreaFila {
      * @param nombre            Nombre del área en este hospital.
      * @param tipo              Tipo genérico de área (nombreAreaInterna del backend).
      * @param descripcion       Descripción detallada del área.
-     * @param estado            Estado del área ("Activo" o "Inactivo").
      * @param codigoAreaInterna Código del área interna genérica (necesario para el PUT).
      */
     public AreaFila(String codigo, String nombre, String tipo,
-                    String descripcion, String estado, String codigoAreaInterna) {
+                    String descripcion, String codigoAreaInterna) {
         this.codigo            = new SimpleStringProperty(codigo);
         this.nombre            = new SimpleStringProperty(nombre);
         this.tipo              = new SimpleStringProperty(tipo);
         this.descripcion       = new SimpleStringProperty(descripcion);
-        this.estado            = new SimpleStringProperty(estado);
         this.codigoAreaInterna = new SimpleStringProperty(codigoAreaInterna);
     }
 
@@ -47,9 +44,6 @@ public class AreaFila {
     /** @return Descripción del área. */
     public String getDescripcion()       { return descripcion.get(); }
 
-    /** @return Estado del área. */
-    public String getEstado()            { return estado.get(); }
-
     /** @return Código del área interna genérica. */
     public String getCodigoAreaInterna() { return codigoAreaInterna.get(); }
 
@@ -64,9 +58,6 @@ public class AreaFila {
 
     /** @return Propiedad observable de la descripción. */
     public StringProperty descripcionProperty()       { return descripcion; }
-
-    /** @return Propiedad observable del estado. */
-    public StringProperty estadoProperty()            { return estado; }
 
     /** @return Propiedad observable del código de área interna. */
     public StringProperty codigoAreaInternaProperty() { return codigoAreaInterna; }

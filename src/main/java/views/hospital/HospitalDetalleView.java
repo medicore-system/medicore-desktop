@@ -2,6 +2,7 @@ package views.hospital;
 
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -9,6 +10,8 @@ import javafx.scene.layout.*;
 import models.AreaInternaModel;
 import services.HospitalService;
 import views.areaInterna.AreaFila;
+import views.common.Toast;
+import views.common.Validacion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +20,13 @@ public class HospitalDetalleView extends VBox {
 
     private final String codigoHospital;
     private final HospitalService hospitalService = new HospitalService();
+    private final Runnable onVolver;
 
     private List<AreaFila> todasLasAreas = new ArrayList<>();
 
     private Label nombreHospital;
     private Label subtitulo;
+    private Button btnVolver;
     private Button btnNuevaArea;
     private Label lblTelefono;
     private Label lblEstado;
@@ -30,12 +35,18 @@ public class HospitalDetalleView extends VBox {
     private VBox cardEstado;
     private TableView<AreaFila> tablaAreas;
 
-    public HospitalDetalleView(String codigoHospital) {
+    public HospitalDetalleView(String codigoHospital, Runnable onVolver) {
         this.codigoHospital = codigoHospital;
+        this.onVolver = onVolver;
         iniciarComponentes();
         configurarLayout();
         registrarEventos();
         cargarEstilos();
+    }
+
+    /** Constructor alternativo sin acción de volver (compatibilidad). */
+    public HospitalDetalleView(String codigoHospital) {
+        this(codigoHospital, null);
     }
 
     private void iniciarComponentes() {
@@ -44,6 +55,9 @@ public class HospitalDetalleView extends VBox {
 
         subtitulo = new Label("");
         subtitulo.getStyleClass().add("subtitulo");
+
+        btnVolver = new Button("← Volver a hospitales");
+        btnVolver.setId("btnVolver");
 
         btnNuevaArea = new Button("+ Nueva Área");
         btnNuevaArea.setId("btnNuevaArea");
@@ -100,7 +114,6 @@ public class HospitalDetalleView extends VBox {
                                 a.nombre,
                                 a.nombreAreaInterna,
                                 a.descripcion != null ? a.descripcion : "",
-                                "Activo",
                                 a.codigoAreaInterna))
                         .toList();
             }
@@ -120,14 +133,10 @@ public class HospitalDetalleView extends VBox {
         new Thread(task).start();
     }
 
-    /**
-     * Crea y configura la tabla de áreas con columnas: Área, Tipo, Descripción, Estado, Acción.
-     *
-     * @return TableView configurado y listo para recibir datos.
-     */
     private TableView<AreaFila> crearTablaAreas() {
         TableView<AreaFila> tv = new TableView<>();
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tv.setPlaceholder(new Label("Este hospital aún no tiene áreas registradas."));
 
         TableColumn<AreaFila, String> colNombre = new TableColumn<>("Área");
         colNombre.setCellValueFactory(c -> c.getValue().nombreProperty());
@@ -137,28 +146,6 @@ public class HospitalDetalleView extends VBox {
 
         TableColumn<AreaFila, String> colDescripcion = new TableColumn<>("Descripción");
         colDescripcion.setCellValueFactory(c -> c.getValue().descripcionProperty());
-
-        TableColumn<AreaFila, String> colEstado = new TableColumn<>("Estado");
-        colEstado.setCellValueFactory(c -> c.getValue().estadoProperty());
-        colEstado.setMaxWidth(100);
-        colEstado.setCellFactory(col -> new TableCell<>() {
-            private final Label badge = new Label();
-            { badge.getStyleClass().add("badge-estado"); }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                } else {
-                    badge.setText(item);
-                    badge.getStyleClass().removeAll("badge-activo", "badge-inactivo");
-                    badge.getStyleClass().add("Activo".equals(item) ? "badge-activo" : "badge-inactivo");
-                    setGraphic(badge);
-                    setText(null);
-                }
-            }
-        });
 
         TableColumn<AreaFila, Void> colAcciones = new TableColumn<>("Acción");
         colAcciones.setMaxWidth(80);
@@ -180,7 +167,7 @@ public class HospitalDetalleView extends VBox {
             }
         });
 
-        tv.getColumns().addAll(colNombre, colTipo, colDescripcion, colEstado, colAcciones);
+        tv.getColumns().addAll(colNombre, colTipo, colDescripcion, colAcciones);
         return tv;
     }
 
@@ -190,41 +177,43 @@ public class HospitalDetalleView extends VBox {
         return btn;
     }
 
-    /**
-     * Abre un diálogo para editar el nombre, descripción y tipo de un área
-     * y envía la petición PUT /hospitals/{id}/areas/{areaId} al backend.
-     *
-     * @param fila fila seleccionada en la tabla que representa el área a editar
-     */
     private void abrirDialogoEditarArea(AreaFila fila) {
         Dialog<HospitalService.AreaUpdateBody> dialog = new Dialog<>();
         dialog.setTitle("Editar Área");
+        dialog.setHeaderText("Editando: " + fila.getNombre());
+        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
 
-        TextField txtNombre      = new TextField(fila.getNombre());
-        txtNombre.setPromptText("Nombre del área");
-        TextField txtDescripcion = new TextField(fila.getDescripcion());
-        txtDescripcion.setPromptText("Descripción (opcional)");
-        TextField txtCodAreaInterna = new TextField(fila.getCodigoAreaInterna());
-        txtCodAreaInterna.setPromptText("Código de tipo de área");
+        TextField txtNombre         = campoTexto(fila.getNombre(),         "Nombre del área");
+        TextField txtDescripcion    = campoTexto(fila.getDescripcion(),    "Descripción (opcional)");
+        TextField txtCodAreaInterna = campoTexto(fila.getCodigoAreaInterna(), "Código del tipo de área");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(10);
-        grid.setPadding(new Insets(16));
-        grid.add(new Label("Nombre"),        0, 0); grid.add(txtNombre,         1, 0);
-        grid.add(new Label("Descripción"),   0, 1); grid.add(txtDescripcion,    1, 1);
-        grid.add(new Label("Tipo (código)"), 0, 2); grid.add(txtCodAreaInterna, 1, 2);
+        Label lblErrores = errorLabel();
+
+        GridPane grid = formularioGrid();
+        agregarFila(grid, 0, "Nombre",         txtNombre);
+        agregarFila(grid, 1, "Descripción",    txtDescripcion);
+        agregarFila(grid, 2, "Tipo (código)",  txtCodAreaInterna);
+        grid.add(lblErrores, 0, 3, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setPrefSize(520, 420);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar Área");
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
 
+        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            String err = validarAreaForm(txtNombre, txtDescripcion, txtCodAreaInterna);
+            if (err != null) { mostrarErroresInline(lblErrores, err); ev.consume(); }
+        });
+
         dialog.setResultConverter(btn -> btn == ButtonType.OK
                 ? new HospitalService.AreaUpdateBody(
-                        txtNombre.getText(), txtDescripcion.getText(),
-                        txtCodAreaInterna.getText())
+                        Validacion.texto(txtNombre), Validacion.texto(txtDescripcion),
+                        Validacion.texto(txtCodAreaInterna))
                 : null);
 
+        cargarEstilosEn(dialog);
         dialog.showAndWait().ifPresent(body -> {
             Task<AreaInternaModel> task = new Task<>() {
                 @Override
@@ -232,8 +221,14 @@ public class HospitalDetalleView extends VBox {
                     return hospitalService.updateArea(codigoHospital, fila.getCodigo(), body);
                 }
             };
-            task.setOnSucceeded(e -> cargarAreas());
-            task.setOnFailed(e -> mostrarError("Error al actualizar el área."));
+            task.setOnSucceeded(e -> {
+                Toast.success(this, "Área '" + body.nombre() + "' actualizada correctamente");
+                cargarAreas();
+            });
+            task.setOnFailed(e -> {
+                Toast.error(this, "Error al actualizar el área");
+                mostrarError("Error al actualizar el área.");
+            });
             new Thread(task).start();
         });
     }
@@ -241,35 +236,51 @@ public class HospitalDetalleView extends VBox {
     private void abrirDialogoNuevaArea() {
         Dialog<HospitalService.AreaCreateBody> dialog = new Dialog<>();
         dialog.setTitle("Nueva Área");
+        dialog.setHeaderText("Registrar nueva área en el hospital");
+        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
 
-        TextField txtCodigo      = new TextField();
-        txtCodigo.setPromptText("Ej: AREA-004");
-        TextField txtNombre      = new TextField();
-        txtNombre.setPromptText("Ej: Consultorio 102");
-        TextField txtDescripcion = new TextField();
-        txtDescripcion.setPromptText("Descripción (opcional)");
-        TextField txtCodAreaInterna = new TextField();
-        txtCodAreaInterna.setPromptText("Código del tipo de área");
+        TextField txtCodigo         = campoTexto("", "Ej: AREA-004");
+        TextField txtNombre         = campoTexto("", "Ej: Consultorio 102");
+        TextField txtDescripcion    = campoTexto("", "Descripción (opcional)");
+        TextField txtCodAreaInterna = campoTexto("", "Código del tipo de área");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(10);
-        grid.setPadding(new Insets(16));
-        grid.add(new Label("Código"),        0, 0); grid.add(txtCodigo,         1, 0);
-        grid.add(new Label("Nombre"),        0, 1); grid.add(txtNombre,         1, 1);
-        grid.add(new Label("Descripción"),   0, 2); grid.add(txtDescripcion,    1, 2);
-        grid.add(new Label("Tipo (código)"), 0, 3); grid.add(txtCodAreaInterna, 1, 3);
+        Label lblErrores = errorLabel();
+
+        GridPane grid = formularioGrid();
+        agregarFila(grid, 0, "Código",         txtCodigo);
+        agregarFila(grid, 1, "Nombre",         txtNombre);
+        agregarFila(grid, 2, "Descripción",    txtDescripcion);
+        agregarFila(grid, 3, "Tipo (código)",  txtCodAreaInterna);
+        grid.add(lblErrores, 0, 4, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setPrefSize(520, 470);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar Área");
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Crear área");
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
+
+        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            StringBuilder sb = new StringBuilder();
+            String e1 = Validacion.requerido("Código", Validacion.texto(txtCodigo));
+            String e2 = Validacion.formatoCodigo("Código", Validacion.texto(txtCodigo));
+            String e3 = codigoAreaYaExiste(Validacion.texto(txtCodigo));
+            Validacion.marcarInvalido(txtCodigo, e1 != null || e2 != null || e3 != null);
+            if (e1 != null) sb.append(e1).append("\n");
+            else if (e2 != null) sb.append(e2).append("\n");
+            else if (e3 != null) sb.append(e3).append("\n");
+            String resto = validarAreaForm(txtNombre, txtDescripcion, txtCodAreaInterna);
+            if (resto != null) sb.append(resto);
+            if (sb.length() > 0) { mostrarErroresInline(lblErrores, sb.toString().trim()); ev.consume(); }
+        });
 
         dialog.setResultConverter(btn -> btn == ButtonType.OK
                 ? new HospitalService.AreaCreateBody(
-                        txtCodigo.getText(), txtNombre.getText(),
-                        txtDescripcion.getText(), txtCodAreaInterna.getText())
+                        Validacion.texto(txtCodigo), Validacion.texto(txtNombre),
+                        Validacion.texto(txtDescripcion), Validacion.texto(txtCodAreaInterna))
                 : null);
 
+        cargarEstilosEn(dialog);
         dialog.showAndWait().ifPresent(body -> {
             Task<AreaInternaModel> task = new Task<>() {
                 @Override
@@ -277,8 +288,14 @@ public class HospitalDetalleView extends VBox {
                     return hospitalService.createArea(codigoHospital, body);
                 }
             };
-            task.setOnSucceeded(e -> cargarAreas());
-            task.setOnFailed(e -> mostrarError("Error al crear el área."));
+            task.setOnSucceeded(e -> {
+                Toast.success(this, "Área '" + body.nombre() + "' creada correctamente");
+                cargarAreas();
+            });
+            task.setOnFailed(e -> {
+                Toast.error(this, "Error al crear el área");
+                mostrarError("Error al crear el área.");
+            });
             new Thread(task).start();
         });
     }
@@ -287,7 +304,7 @@ public class HospitalDetalleView extends VBox {
         VBox infoNombre = new VBox(3, nombreHospital, subtitulo);
         Region spacerHeader = new Region();
         HBox.setHgrow(spacerHeader, Priority.ALWAYS);
-        HBox header = new HBox(infoNombre, spacerHeader, btnNuevaArea);
+        HBox header = new HBox(12, btnVolver, infoNombre, spacerHeader, btnNuevaArea);
         header.setAlignment(Pos.CENTER_LEFT);
         header.getStyleClass().add("header-detalle");
 
@@ -305,6 +322,7 @@ public class HospitalDetalleView extends VBox {
         setSpacing(16);
         setPadding(new Insets(24));
         getChildren().addAll(header, infoCards, barraAreas, tablaAreas);
+        VBox.setVgrow(tablaAreas, Priority.ALWAYS);
     }
 
     private VBox crearCard(String etiqueta, Label valor, boolean esEstado) {
@@ -319,6 +337,10 @@ public class HospitalDetalleView extends VBox {
     private void registrarEventos() {
         btnNuevaArea.setOnAction(e -> abrirDialogoNuevaArea());
 
+        btnVolver.setOnAction(e -> {
+            if (onVolver != null) onVolver.run();
+        });
+
         cmbTipo.setOnAction(e -> {
             String tipo = cmbTipo.getValue();
             if (tipo == null) {
@@ -330,6 +352,84 @@ public class HospitalDetalleView extends VBox {
                                 .toList()));
             }
         });
+    }
+
+    /* ---------- Helpers de formulario ---------- */
+
+    private TextField campoTexto(String inicial, String prompt) {
+        TextField tf = new TextField(inicial == null ? "" : inicial);
+        tf.setPromptText(prompt);
+        tf.getStyleClass().add("campo-form");
+        tf.setPrefHeight(36);
+        return tf;
+    }
+
+    private GridPane formularioGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14); grid.setVgap(14);
+        grid.setPadding(new Insets(22, 24, 18, 24));
+        ColumnConstraints c0 = new ColumnConstraints();
+        c0.setMinWidth(130); c0.setHalignment(HPos.RIGHT);
+        ColumnConstraints c1 = new ColumnConstraints();
+        c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
+        grid.getColumnConstraints().addAll(c0, c1);
+        return grid;
+    }
+
+    private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
+        Label lbl = new Label(etiqueta);
+        lbl.getStyleClass().add("etiqueta-form");
+        grid.add(lbl, 0, fila);
+        grid.add(control, 1, fila);
+        if (control instanceof Region r) GridPane.setHgrow(r, Priority.ALWAYS);
+    }
+
+    private Label errorLabel() {
+        Label l = new Label();
+        l.getStyleClass().add("errores-form");
+        l.setVisible(false); l.setManaged(false);
+        l.setWrapText(true);
+        return l;
+    }
+
+    private String validarAreaForm(TextField txtNombre, TextField txtDescripcion,
+                                   TextField txtCodAreaInterna) {
+        Validacion.limpiarEstado(txtNombre, txtDescripcion, txtCodAreaInterna);
+        StringBuilder sb = new StringBuilder();
+        String e;
+
+        e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
+        if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 100);
+        Validacion.marcarInvalido(txtNombre, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.longitudMax("Descripción", Validacion.texto(txtDescripcion), 250);
+        Validacion.marcarInvalido(txtDescripcion, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.requerido("Tipo (código)", Validacion.texto(txtCodAreaInterna));
+        if (e == null) e = Validacion.formatoCodigo("Tipo (código)", Validacion.texto(txtCodAreaInterna));
+        Validacion.marcarInvalido(txtCodAreaInterna, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        return sb.length() == 0 ? null : sb.toString().trim();
+    }
+
+    private String codigoAreaYaExiste(String codigo) {
+        if (codigo == null || codigo.isBlank()) return null;
+        boolean existe = todasLasAreas.stream()
+                .anyMatch(a -> codigo.equalsIgnoreCase(a.getCodigo()));
+        return existe ? "• Ya existe un área con el código '" + codigo + "'" : null;
+    }
+
+    private void mostrarErroresInline(Label lbl, String mensaje) {
+        lbl.setText(mensaje);
+        lbl.setVisible(true); lbl.setManaged(true);
+    }
+
+    private void cargarEstilosEn(Dialog<?> dialog) {
+        dialog.getDialogPane().getStylesheets().add(
+                getClass().getResource("/styles/hospital/hospitalDetalle.css").toExternalForm());
     }
 
     private void cargarEstilos() {

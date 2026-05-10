@@ -10,7 +10,10 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) {
         //Creamos el nodo raiz que es el panel principal que contiene el sidebar dinamico
-        MainLayout root = new MainLayout();
+        MainLayout mainLayout = new MainLayout();
+        //Envolvemos en un StackPane para permitir overlays (notificaciones toast, etc.)
+        StackPane root = new StackPane(mainLayout);
+        root.setId("toast-overlay");
         //Creamos la scene que guarda el panel a mostrar en el stage
         Scene scene = new Scene(root, 1000, 700);
         //Añadimos nuestra hoja de estilos global

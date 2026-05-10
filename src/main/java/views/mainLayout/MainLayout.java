@@ -40,9 +40,7 @@ public class MainLayout extends BorderPane {
 
         //Asignamos "entiramiento" a los diferentes scenes que aparecen segun donde estemos parados
         ciudades.setOnAction    (e -> {setCenter(new CiudadView());});
-        hospitales.setOnAction(e -> setCenter(
-                new HospitalView(codigo -> setCenter(new HospitalDetalleView(codigo)))
-        ));
+        hospitales.setOnAction(e -> mostrarHospitales());
         medicos.setOnAction     (e -> {setCenter(new MedicoView());});
         asignaciones.setOnAction(e -> {setCenter(new AsignacionView());});
         pacientes.setOnAction   (e -> {setCenter(new PacienteView());});
@@ -72,5 +70,10 @@ public class MainLayout extends BorderPane {
         );
 
         return menu;
+    }
+
+    private void mostrarHospitales() {
+        setCenter(new HospitalView(codigo ->
+                setCenter(new HospitalDetalleView(codigo, this::mostrarHospitales))));
     }
 }

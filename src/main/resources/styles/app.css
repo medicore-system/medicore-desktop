@@ -13,3 +13,73 @@
 .button:hover {
     -fx-background-color: #2563eb;
 }
+
+/* =========================================================
+   Toast notifications - tarjeta moderna con barra lateral
+   ========================================================= */
+.toast {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.18), 16, 0, 0, 6);
+    -fx-background-radius: 10;
+}
+.toast-tarjeta {
+    -fx-background-color: white;
+    -fx-padding: 14 18 14 14;
+    -fx-background-radius: 0 10 10 0;
+    -fx-min-width: 360;
+}
+.toast-barra {
+    -fx-min-width: 6;
+    -fx-pref-width: 6;
+    -fx-max-width: 6;
+    -fx-background-radius: 10 0 0 10;
+}
+.toast-circulo {
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-max-width: 36;
+    -fx-max-height: 36;
+    -fx-background-radius: 50%;
+    -fx-alignment: center;
+}
+.toast-icono {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.toast-titulo {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+.toast-descripcion {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #475569;
+}
+.toast-cerrar {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+    -fx-padding: 2 6;
+    -fx-cursor: hand;
+    -fx-background-radius: 4;
+    -fx-min-width: 0;
+}
+.toast-cerrar:hover {
+    -fx-background-color: #f1f5f9;
+    -fx-text-fill: #475569;
+}
+
+/* Variantes por tipo */
+.toast-success .toast-barra { -fx-background-color: #10b981; }
+.toast-success .toast-circulo { -fx-background-color: #10b981; }
+
+.toast-error .toast-barra { -fx-background-color: #ef4444; }
+.toast-error .toast-circulo { -fx-background-color: #ef4444; }
+
+.toast-info .toast-barra { -fx-background-color: #3b82f6; }
+.toast-info .toast-circulo { -fx-background-color: #3b82f6; }
+
+.toast-warning .toast-barra { -fx-background-color: #f59e0b; }
+.toast-warning .toast-circulo { -fx-background-color: #f59e0b; }
