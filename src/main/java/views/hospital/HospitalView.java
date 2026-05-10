@@ -3,35 +3,29 @@ package views.hospital;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import models.HospitalModel;
 import services.HospitalService;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Vista principal para la gestión de hospitales.
- * Muestra una tabla con los hospitales registrados y permite
- * realizar acciones de consulta y edición.
- */
 public class HospitalView extends VBox {
 
     private final Consumer<String> onVerHospital;
     private final HospitalService hospitalService = new HospitalService();
 
+    private List<HospitalFila> todosLosHospitales = new ArrayList<>();
+
     private Label titulo;
     private TextField buscador;
+    private Button btnNuevoHospital;
     private TableView<HospitalFila> tabla;
 
-    /**
-     * Constructor que inicializa y configura todos los componentes de la vista.
-     *
-     * @param onVerHospital Callback que recibe el código del hospital al pulsar "Ver".
-     */
     public HospitalView(Consumer<String> onVerHospital) {
         this.onVerHospital = onVerHospital;
         iniciarComponentes();
@@ -40,26 +34,21 @@ public class HospitalView extends VBox {
         cargarEstilos();
     }
 
-    /**
-     * Inicializa los componentes visuales: título, buscador y tabla.
-     */
     private void iniciarComponentes() {
         titulo = new Label("Gestión de Hospitales");
         titulo.getStyleClass().add("titulo");
 
         buscador = new TextField();
-        buscador.setPromptText("Buscar hospital...");
+        buscador.setPromptText("🔍  Buscar hospital...");
         buscador.setId("buscador");
+
+        btnNuevoHospital = new Button("+ Nuevo Hospital");
+        btnNuevoHospital.setId("btnNuevoHospital");
 
         tabla = crearTabla();
         cargarHospitales();
     }
 
-    /**
-     * Pide al backend la lista de hospitales (GET /hospitals) en un hilo
-     * secundario y actualiza la tabla cuando llega la respuesta.
-     * Usar Task evita que la UI se congele durante la petición HTTP.
-     */
     private void cargarHospitales() {
         Task<List<HospitalFila>> task = new Task<>() {
             @Override
@@ -68,82 +57,101 @@ public class HospitalView extends VBox {
                         .map(h -> new HospitalFila(
                                 h.codigo,
                                 h.nombre,
+                                h.direccion != null ? h.direccion : "",
                                 h.nombreCiudad,
                                 h.telefono,
                                 Boolean.TRUE.equals(h.estado) ? "Activo" : "Inactivo"))
                         .toList();
             }
         };
-
-        // setOnSucceeded se ejecuta en el hilo de JavaFX — seguro para tocar la UI
-        task.setOnSucceeded(e ->
-                tabla.setItems(FXCollections.observableArrayList(task.getValue())));
-
+        task.setOnSucceeded(e -> {
+            todosLosHospitales = new ArrayList<>(task.getValue());
+            tabla.setItems(FXCollections.observableArrayList(todosLosHospitales));
+        });
         task.setOnFailed(e ->
                 mostrarError("No se pudieron cargar los hospitales.\n" +
                              "Verifica que el servidor esté corriendo en localhost:8080."));
-
         new Thread(task).start();
     }
 
-    /**
-     * Crea y configura la tabla con sus columnas y comportamiento por celda.
-     *
-     * @return TableView configurado con las columnas de hospital.
-     */
     private TableView<HospitalFila> crearTabla() {
         TableView<HospitalFila> tv = new TableView<>();
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
         TableColumn<HospitalFila, String> colCodigo = new TableColumn<>("Código");
-        colCodigo.setCellValueFactory(new PropertyValueFactory<>("codigo"));
-
-        TableColumn<HospitalFila, String> colNombre = new TableColumn<>("Hospital");
-        colNombre.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        colNombre.setPrefWidth(200);
+        colCodigo.setCellValueFactory(c -> c.getValue().codigoProperty());
+        colCodigo.setMaxWidth(90);
+        colCodigo.setMinWidth(80);
+        TableColumn<HospitalFila, Void> colNombre = new TableColumn<>("Hospital");
+        colNombre.setPrefWidth(220);
+        colNombre.setCellFactory(col -> new TableCell<>() {
+            private final Label lblNombre = new Label();
+            private final Label lblDir    = new Label();
+            private final VBox  contenido = new VBox(2, lblNombre, lblDir);
+            {
+                lblNombre.getStyleClass().add("hospital-nombre-celda");
+                lblDir.getStyleClass().add("hospital-dir-celda");
+                contenido.setPadding(new Insets(4, 0, 4, 0));
+            }
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getIndex() >= getTableView().getItems().size()) {
+                    setGraphic(null);
+                } else {
+                    HospitalFila f = getTableView().getItems().get(getIndex());
+                    lblNombre.setText(f.getNombre());
+                    lblDir.setText(f.getDireccion());
+                    setGraphic(contenido);
+                }
+            }
+        });
 
         TableColumn<HospitalFila, String> colCiudad = new TableColumn<>("Ciudad");
-        colCiudad.setCellValueFactory(new PropertyValueFactory<>("ciudad"));
+        colCiudad.setCellValueFactory(c -> c.getValue().ciudadProperty());
 
         TableColumn<HospitalFila, String> colTelefono = new TableColumn<>("Teléfono");
-        colTelefono.setCellValueFactory(new PropertyValueFactory<>("telefono"));
+        colTelefono.setCellValueFactory(c -> c.getValue().telefonoProperty());
 
         TableColumn<HospitalFila, String> colEstado = new TableColumn<>("Estado");
-        colEstado.setCellValueFactory(new PropertyValueFactory<>("estado"));
+        colEstado.setCellValueFactory(c -> c.getValue().estadoProperty());
+        colEstado.setMaxWidth(100);
         colEstado.setCellFactory(col -> new TableCell<>() {
+            private final Label badge = new Label();
+            {
+                badge.getStyleClass().add("badge-estado");
+            }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
-                    setText(null);
-                    setStyle("");
+                    setGraphic(null);
                 } else {
-                    setText(item);
-                    setStyle("Activo".equals(item)
-                            ? "-fx-text-fill: #16a34a; -fx-font-weight: bold;"
-                            : "-fx-text-fill: #dc2626; -fx-font-weight: bold;");
+                    badge.setText(item);
+                    badge.getStyleClass().removeAll("badge-activo", "badge-inactivo");
+                    badge.getStyleClass().add("Activo".equals(item) ? "badge-activo" : "badge-inactivo");
+                    setGraphic(badge);
+                    setText(null);
                 }
             }
         });
 
         TableColumn<HospitalFila, Void> colAcciones = new TableColumn<>("Acciones");
+        colAcciones.setMaxWidth(110);
         colAcciones.setCellFactory(col -> new TableCell<>() {
-            private final Button btnVer    = new Button("Ver");
-            private final Button btnEditar = new Button("Editar");
+            private final Button btnVer    = crearBtnIcono("👁", "btn-icono", "btn-ver");
+            private final Button btnEditar = crearBtnIcono("✎", "btn-icono", "btn-editar");
             private final HBox contenedor  = new HBox(5, btnVer, btnEditar);
-
             {
+                contenedor.setAlignment(Pos.CENTER_LEFT);
                 btnVer.setOnAction(e -> {
-                    HospitalFila fila = getTableView().getItems().get(getIndex());
-                    onVerHospital.accept(fila.getCodigo());
+                    HospitalFila f = getTableView().getItems().get(getIndex());
+                    onVerHospital.accept(f.getCodigo());
                 });
-
                 btnEditar.setOnAction(e -> {
-                    HospitalFila fila = getTableView().getItems().get(getIndex());
-                    abrirDialogoEditar(fila);
+                    HospitalFila f = getTableView().getItems().get(getIndex());
+                    abrirDialogoEditar(f);
                 });
             }
-
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
@@ -155,9 +163,12 @@ public class HospitalView extends VBox {
         return tv;
     }
 
-    /**
-     * Abre un diálogo para editar el hospital y envía PUT /hospitals/{codigo}.
-     */
+    private Button crearBtnIcono(String icono, String... clases) {
+        Button btn = new Button(icono);
+        btn.getStyleClass().addAll(clases);
+        return btn;
+    }
+
     private void abrirDialogoEditar(HospitalFila fila) {
         Dialog<HospitalService.HospitalUpdateBody> dialog = new Dialog<>();
         dialog.setTitle("Editar Hospital");
@@ -165,30 +176,24 @@ public class HospitalView extends VBox {
 
         TextField txtNombre    = new TextField(fila.getNombre());
         TextField txtTelefono  = new TextField(fila.getTelefono());
-        // codigoCiudad y dirección no están en HospitalFila, así que los pedimos al usuario
-        TextField txtDireccion = new TextField();
+        TextField txtDireccion = new TextField(fila.getDireccion());
         TextField txtCiudad    = new TextField();
 
         VBox formulario = new VBox(8,
-                new Label("Nombre:"),    txtNombre,
-                new Label("Teléfono:"),  txtTelefono,
-                new Label("Dirección:"), txtDireccion,
-                new Label("Cód. Ciudad:"), txtCiudad);
+                new Label("Nombre:"),       txtNombre,
+                new Label("Teléfono:"),     txtTelefono,
+                new Label("Dirección:"),    txtDireccion,
+                new Label("Cód. Ciudad:"),  txtCiudad);
         formulario.setPadding(new Insets(10));
         dialog.getDialogPane().setContent(formulario);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        dialog.setResultConverter(btn -> {
-            if (btn == ButtonType.OK) {
-                return new HospitalService.HospitalUpdateBody(
-                        txtNombre.getText(),
-                        txtDireccion.getText(),
-                        txtTelefono.getText(),
-                        txtCiudad.getText(),
-                        "Activo".equals(fila.getEstado()));
-            }
-            return null;
-        });
+        dialog.setResultConverter(btn -> btn == ButtonType.OK
+                ? new HospitalService.HospitalUpdateBody(
+                        txtNombre.getText(), txtDireccion.getText(),
+                        txtTelefono.getText(), txtCiudad.getText(),
+                        "Activo".equals(fila.getEstado()))
+                : null);
 
         dialog.showAndWait().ifPresent(body -> {
             Task<HospitalModel> task = new Task<>() {
@@ -198,42 +203,118 @@ public class HospitalView extends VBox {
                 }
             };
             task.setOnSucceeded(e -> cargarHospitales());
-            task.setOnFailed(e  -> mostrarError("Error al actualizar el hospital."));
+            task.setOnFailed(e -> mostrarError("Error al actualizar el hospital."));
             new Thread(task).start();
         });
     }
 
     /**
-     * Organiza los componentes dentro del layout con espaciado y padding.
+     * Organiza los componentes dentro del layout con título y botón en la barra superior.
      */
     private void configurarLayout() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox barraTitulo = new HBox(titulo, spacer, btnNuevoHospital);
+        barraTitulo.setAlignment(Pos.CENTER_LEFT);
+
         setSpacing(15);
-        setPadding(new Insets(20));
-        getChildren().addAll(titulo, buscador, tabla);
+        setPadding(new Insets(24));
+        getChildren().addAll(barraTitulo, buscador, tabla);
     }
 
     /**
-     * Registra los eventos de la vista, como el filtrado por el buscador.
+     * Registra los eventos de la vista: buscador con orden por relevancia
+     * y botón de nuevo hospital.
      */
     private void registrarEventos() {
-        buscador.setOnKeyReleased(e -> {
-            String texto = buscador.getText().toLowerCase();
-            // Filtra la tabla localmente sin nueva petición al servidor
-            tabla.setItems(tabla.getItems().filtered(
-                    h -> h.getNombre().toLowerCase().contains(texto)));
+        buscador.textProperty().addListener((obs, anterior, texto) -> {
+            if (texto == null || texto.isBlank()) {
+                tabla.setItems(FXCollections.observableArrayList(todosLosHospitales));
+                return;
+            }
+            String t = texto.toLowerCase().trim();
+            List<HospitalFila> ordenados = todosLosHospitales.stream()
+                    .sorted(Comparator.comparingInt((HospitalFila h) -> puntuacion(h, t)).reversed())
+                    .toList();
+            tabla.setItems(FXCollections.observableArrayList(ordenados));
+        });
+
+        btnNuevoHospital.setOnAction(e -> abrirDialogoCrear());
+    }
+
+    /**
+     * Abre un diálogo para registrar un nuevo hospital y envía POST /hospitals.
+     */
+    private void abrirDialogoCrear() {
+        Dialog<HospitalService.HospitalCreateBody> dialog = new Dialog<>();
+        dialog.setTitle("Nuevo Hospital");
+
+        TextField txtCodigo    = new TextField();
+        txtCodigo.setPromptText("Ej: HOS-004");
+        TextField txtNombre    = new TextField();
+        txtNombre.setPromptText("Nombre del hospital");
+        TextField txtDireccion = new TextField();
+        txtDireccion.setPromptText("Dirección");
+        TextField txtTelefono  = new TextField();
+        txtTelefono.setPromptText("Ej: (601) 000-0000");
+        TextField txtCiudad    = new TextField();
+        txtCiudad.setPromptText("Código de ciudad");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(16));
+        grid.add(new Label("Código:"),     0, 0); grid.add(txtCodigo,    1, 0);
+        grid.add(new Label("Nombre:"),     0, 1); grid.add(txtNombre,    1, 1);
+        grid.add(new Label("Dirección:"),  0, 2); grid.add(txtDireccion, 1, 2);
+        grid.add(new Label("Teléfono:"),   0, 3); grid.add(txtTelefono,  1, 3);
+        grid.add(new Label("Cód. Ciudad:"),0, 4); grid.add(txtCiudad,    1, 4);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar");
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
+
+        dialog.setResultConverter(btn -> btn == ButtonType.OK
+                ? new HospitalService.HospitalCreateBody(
+                        txtCodigo.getText(), txtNombre.getText(), txtDireccion.getText(),
+                        txtTelefono.getText(), txtCiudad.getText(), true)
+                : null);
+
+        dialog.showAndWait().ifPresent(body -> {
+            Task<HospitalModel> task = new Task<>() {
+                @Override
+                protected HospitalModel call() throws Exception {
+                    return hospitalService.createHospital(body);
+                }
+            };
+            task.setOnSucceeded(e -> cargarHospitales());
+            task.setOnFailed(e -> mostrarError("Error al crear el hospital.\n" +
+                    "Verifica que el código y ciudad sean válidos."));
+            new Thread(task).start();
         });
     }
 
     /**
-     * Aplica los estilos CSS a la vista.
+     * Calcula qué tan relevante es un hospital para el texto buscado.
+     * Mayor número = más relevante = sube en la tabla.
      */
+    private int puntuacion(HospitalFila h, String texto) {
+        String nombre = h.getNombre().toLowerCase();
+        String ciudad = h.getCiudad().toLowerCase();
+        String codigo = h.getCodigo().toLowerCase();
+        if (nombre.startsWith(texto))            return 4;
+        if (nombre.contains(texto))              return 3;
+        if (ciudad.startsWith(texto))            return 2;
+        if (ciudad.contains(texto)
+                || codigo.contains(texto))       return 1;
+        return 0; // no coincide, pero sigue apareciendo al final
+    }
+
     private void cargarEstilos() {
         getStyleClass().add("hospital-view");
         getStylesheets().add(
-                getClass()
-                        .getResource("/styles/hospital/hospital.css")
-                        .toExternalForm()
-        );
+                getClass().getResource("/styles/hospital/hospital.css").toExternalForm());
     }
 
     private void mostrarError(String mensaje) {

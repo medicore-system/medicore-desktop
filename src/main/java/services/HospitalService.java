@@ -25,8 +25,6 @@ public class HospitalService {
     private final HttpClient http = HttpClient.newHttpClient();
     private final Gson gson = new Gson();
 
-    // ── HOSPITALES ────────────────────────────────────────────────────────────
-
     /** GET /hospitals — lista todos los hospitales. */
     public List<HospitalModel> getAll() throws Exception {
         String json = get("/hospitals");
@@ -39,18 +37,35 @@ public class HospitalService {
         return gson.fromJson(json, HospitalModel.class);
     }
 
+    /**
+     * Crea un nuevo hospital en el sistema.
+     * Mapea al endpoint POST /hospitals del backend.
+     *
+     * @param body datos del hospital a crear
+     * @return el hospital creado con los datos asignados por el servidor
+     * @throws Exception si el servidor responde con un código de error
+     */
+    public HospitalModel createHospital(HospitalCreateBody body) throws Exception {
+        String json = post("/hospitals", gson.toJson(body));
+        return gson.fromJson(json, HospitalModel.class);
+    }
+
     /** PUT /hospitals/{codigo} — actualiza los datos de un hospital. */
     public HospitalModel update(String codigo, HospitalUpdateBody body) throws Exception {
         String json = put("/hospitals/" + codigo, gson.toJson(body));
         return gson.fromJson(json, HospitalModel.class);
     }
 
-    // ── ÁREAS INTERNAS ────────────────────────────────────────────────────────
-
     /** GET /hospitals/{codigoHospital}/areas — lista las áreas de un hospital. */
     public List<AreaInternaModel> getAreas(String codigoHospital) throws Exception {
         String json = get("/hospitals/" + codigoHospital + "/areas");
         return gson.fromJson(json, new TypeToken<List<AreaInternaModel>>() {}.getType());
+    }
+
+    /** POST /hospitals/{codigoHospital}/areas — crea un área nueva en el hospital. */
+    public AreaInternaModel createArea(String codigoHospital, AreaCreateBody body) throws Exception {
+        String json = post("/hospitals/" + codigoHospital + "/areas", gson.toJson(body));
+        return gson.fromJson(json, AreaInternaModel.class);
     }
 
     /** PUT /hospitals/{codigoHospital}/areas/{codigoArea} — actualiza un área. */
@@ -61,11 +76,18 @@ public class HospitalService {
         return gson.fromJson(json, AreaInternaModel.class);
     }
 
-    // ── CUERPOS DE PETICIÓN ───────────────────────────────────────────────────
-
     /**
      * Refleja HospitalUpdateRequest del backend.
      * Usa record para que Gson lo serialice directamente a JSON.
+     */
+    /**
+     * Refleja HospitalRequest del backend para la creación de un hospital.
+     */
+    public record HospitalCreateBody(String codigo, String nombre, String direccion,
+                                     String telefono, String codigoCiudad, Boolean estado) {}
+
+    /**
+     * Refleja HospitalUpdateRequest del backend para la actualización de un hospital.
      */
     public record HospitalUpdateBody(String nombre, String direccion,
                                      String telefono, String codigoCiudad,
@@ -77,12 +99,24 @@ public class HospitalService {
     public record AreaUpdateBody(String nombre, String descripcion,
                                  String codigoAreaInterna) {}
 
-    // ── MÉTODOS HTTP INTERNOS ─────────────────────────────────────────────────
+    public record AreaCreateBody(String codigo, String nombre,
+                                 String descripcion, String codigoAreaInterna) {}
 
     private String get(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
                 .GET()
+                .build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        validarRespuesta(response);
+        return response.body();
+    }
+
+    private String post(String path, String jsonBody) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + path))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .build();
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
         validarRespuesta(response);
