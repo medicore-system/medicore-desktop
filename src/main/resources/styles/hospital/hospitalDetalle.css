@@ -1,0 +1,45 @@
+.hospital-detalle-view {
+    -fx-background-color: #ffffff;
+}
+
+.nombre-hospital {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
+
+.subtitulo {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+.header-detalle {
+    -fx-alignment: center-left;
+}
+
+#btnNuevaArea {
+    -fx-background-color: #1e3a5f;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+}
+
+.card-info {
+    -fx-background-color: #f9fafb;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12;
+    -fx-min-width: 180;
+}
+
+.card-etiqueta {
+    -fx-font-size: 11px;
+    -fx-text-fill: #6b7280;
+}
+
+.titulo-areas {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+}
