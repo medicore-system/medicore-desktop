@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import models.AreaInternaModel;
 import models.HospitalModel;
+import views.hospital.CiudadHospitalModel;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -54,6 +55,12 @@ public class HospitalService {
     public HospitalModel update(String codigo, HospitalUpdateBody body) throws Exception {
         String json = put("/hospitals/" + codigo, gson.toJson(body));
         return gson.fromJson(json, HospitalModel.class);
+    }
+
+    /** GET /cities — lista todas las ciudades disponibles. */
+    public List<CiudadHospitalModel> getCiudades() throws Exception {
+        String json = get("/cities");
+        return gson.fromJson(json, new TypeToken<List<CiudadHospitalModel>>() {}.getType());
     }
 
     /** GET /hospitals/{codigoHospital}/areas — lista las áreas de un hospital. */

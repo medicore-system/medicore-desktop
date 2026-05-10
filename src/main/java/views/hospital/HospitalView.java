@@ -8,6 +8,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import models.HospitalModel;
 import services.HospitalService;
+import views.common.Toast;
+import views.common.Validacion;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,9 +22,11 @@ public class HospitalView extends VBox {
     private final HospitalService hospitalService = new HospitalService();
 
     private List<HospitalFila> todosLosHospitales = new ArrayList<>();
+    private List<CiudadHospitalModel>  ciudadesCache      = new ArrayList<>();
 
     private Label titulo;
     private TextField buscador;
+    private Label lblContador;
     private Button btnNuevoHospital;
     private TableView<HospitalFila> tabla;
 
@@ -42,11 +46,15 @@ public class HospitalView extends VBox {
         buscador.setPromptText("🔍  Buscar hospital...");
         buscador.setId("buscador");
 
+        lblContador = new Label("");
+        lblContador.getStyleClass().add("contador-resultados");
+
         btnNuevoHospital = new Button("+ Nuevo Hospital");
         btnNuevoHospital.setId("btnNuevoHospital");
 
         tabla = crearTabla();
         cargarHospitales();
+        cargarCiudades();
     }
 
     private void cargarHospitales() {
@@ -60,13 +68,14 @@ public class HospitalView extends VBox {
                                 h.direccion != null ? h.direccion : "",
                                 h.nombreCiudad,
                                 h.telefono,
-                                Boolean.TRUE.equals(h.estado) ? "Activo" : "Inactivo"))
+                                Boolean.TRUE.equals(h.estado) ? "Activo" : "Inactivo",
+                                h.codigoCiudad))
                         .toList();
             }
         };
         task.setOnSucceeded(e -> {
             todosLosHospitales = new ArrayList<>(task.getValue());
-            tabla.setItems(FXCollections.observableArrayList(todosLosHospitales));
+            aplicarBusqueda(buscador.getText());
         });
         task.setOnFailed(e ->
                 mostrarError("No se pudieron cargar los hospitales.\n" +
@@ -74,22 +83,38 @@ public class HospitalView extends VBox {
         new Thread(task).start();
     }
 
+    private void cargarCiudades() {
+        Task<List<CiudadHospitalModel>> task = new Task<>() {
+            @Override
+            protected List<CiudadHospitalModel> call() throws Exception {
+                return hospitalService.getCiudades();
+            }
+        };
+        task.setOnSucceeded(e -> ciudadesCache = new ArrayList<>(task.getValue()));
+        new Thread(task).start();
+    }
+
     private TableView<HospitalFila> crearTabla() {
         TableView<HospitalFila> tv = new TableView<>();
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tv.setPlaceholder(new Label("No hay hospitales que coincidan con la búsqueda."));
+
         TableColumn<HospitalFila, String> colCodigo = new TableColumn<>("Código");
         colCodigo.setCellValueFactory(c -> c.getValue().codigoProperty());
         colCodigo.setMaxWidth(90);
         colCodigo.setMinWidth(80);
+
         TableColumn<HospitalFila, Void> colNombre = new TableColumn<>("Hospital");
         colNombre.setPrefWidth(220);
         colNombre.setCellFactory(col -> new TableCell<>() {
             private final Label lblNombre = new Label();
             private final Label lblDir    = new Label();
-            private final VBox  contenido = new VBox(2, lblNombre, lblDir);
+            private final Label lblMatch  = new Label();
+            private final VBox  contenido = new VBox(2, lblNombre, lblDir, lblMatch);
             {
                 lblNombre.getStyleClass().add("hospital-nombre-celda");
                 lblDir.getStyleClass().add("hospital-dir-celda");
+                lblMatch.getStyleClass().add("hospital-match-celda");
                 contenido.setPadding(new Insets(4, 0, 4, 0));
             }
             @Override
@@ -101,6 +126,15 @@ public class HospitalView extends VBox {
                     HospitalFila f = getTableView().getItems().get(getIndex());
                     lblNombre.setText(f.getNombre());
                     lblDir.setText(f.getDireccion());
+                    String match = f.getCampoCoincidente();
+                    if (match == null || match.isEmpty()) {
+                        lblMatch.setVisible(false);
+                        lblMatch.setManaged(false);
+                    } else {
+                        lblMatch.setText("Coincide en: " + match);
+                        lblMatch.setVisible(true);
+                        lblMatch.setManaged(true);
+                    }
                     setGraphic(contenido);
                 }
             }
@@ -117,9 +151,7 @@ public class HospitalView extends VBox {
         colEstado.setMaxWidth(100);
         colEstado.setCellFactory(col -> new TableCell<>() {
             private final Label badge = new Label();
-            {
-                badge.getStyleClass().add("badge-estado");
-            }
+            { badge.getStyleClass().add("badge-estado"); }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -172,29 +204,57 @@ public class HospitalView extends VBox {
     private void abrirDialogoEditar(HospitalFila fila) {
         Dialog<HospitalService.HospitalUpdateBody> dialog = new Dialog<>();
         dialog.setTitle("Editar Hospital");
-        dialog.setHeaderText(fila.getNombre());
+        dialog.setHeaderText("Editando: " + fila.getNombre());
+        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
 
-        TextField txtNombre    = new TextField(fila.getNombre());
-        TextField txtTelefono  = new TextField(fila.getTelefono());
-        TextField txtDireccion = new TextField(fila.getDireccion());
-        TextField txtCiudad    = new TextField();
+        TextField txtNombre    = campoTexto(fila.getNombre(),    "Nombre del hospital");
+        TextField txtTelefono  = campoTexto(fila.getTelefono(),  "Ej: (601) 000-0000");
+        TextField txtDireccion = campoTexto(fila.getDireccion(), "Dirección física");
 
-        VBox formulario = new VBox(8,
-                new Label("Nombre:"),       txtNombre,
-                new Label("Teléfono:"),     txtTelefono,
-                new Label("Dirección:"),    txtDireccion,
-                new Label("Cód. Ciudad:"),  txtCiudad);
-        formulario.setPadding(new Insets(10));
-        dialog.getDialogPane().setContent(formulario);
+        ComboBox<CiudadHospitalModel> cmbCiudad = comboCiudades();
+        ciudadesCache.stream()
+                .filter(c -> c.codigo != null && c.codigo.equals(fila.getCodigoCiudad()))
+                .findFirst()
+                .ifPresent(cmbCiudad::setValue);
+
+        ComboBox<String> cmbEstado = comboEstado(fila.getEstado());
+
+        Label lblErrores = new Label();
+        lblErrores.getStyleClass().add("errores-form");
+        lblErrores.setVisible(false);
+        lblErrores.setManaged(false);
+        lblErrores.setWrapText(true);
+
+        GridPane grid = formularioGrid();
+        agregarFila(grid, 0, "Nombre",    txtNombre);
+        agregarFila(grid, 1, "Teléfono",  txtTelefono);
+        agregarFila(grid, 2, "Dirección", txtDireccion);
+        agregarFila(grid, 3, "Ciudad",    cmbCiudad);
+        agregarFila(grid, 4, "Estado",    cmbEstado);
+        grid.add(lblErrores, 0, 5, 2, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setPrefSize(520, 480);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar cambios");
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
 
-        dialog.setResultConverter(btn -> btn == ButtonType.OK
-                ? new HospitalService.HospitalUpdateBody(
-                        txtNombre.getText(), txtDireccion.getText(),
-                        txtTelefono.getText(), txtCiudad.getText(),
-                        "Activo".equals(fila.getEstado()))
-                : null);
+        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            String err = validarHospitalForm(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
+            if (err != null) { mostrarErroresInline(lblErrores, err); ev.consume(); }
+        });
 
+        dialog.setResultConverter(btn -> {
+            if (btn != ButtonType.OK) return null;
+            CiudadHospitalModel c = cmbCiudad.getValue();
+            return new HospitalService.HospitalUpdateBody(
+                    Validacion.texto(txtNombre), Validacion.texto(txtDireccion),
+                    Validacion.texto(txtTelefono), c.codigo,
+                    "Activo".equals(cmbEstado.getValue()));
+        });
+
+        cargarEstilosEn(dialog);
         dialog.showAndWait().ifPresent(body -> {
             Task<HospitalModel> task = new Task<>() {
                 @Override
@@ -202,85 +262,127 @@ public class HospitalView extends VBox {
                     return hospitalService.update(fila.getCodigo(), body);
                 }
             };
-            task.setOnSucceeded(e -> cargarHospitales());
-            task.setOnFailed(e -> mostrarError("Error al actualizar el hospital."));
+            task.setOnSucceeded(e -> {
+                Toast.success(this, "Hospital '" + body.nombre() + "' actualizado correctamente");
+                cargarHospitales();
+            });
+            task.setOnFailed(e -> {
+                Toast.error(this, "Error al actualizar el hospital");
+                mostrarError("Error al actualizar el hospital.");
+            });
             new Thread(task).start();
         });
     }
 
-    /**
-     * Organiza los componentes dentro del layout con título y botón en la barra superior.
-     */
     private void configurarLayout() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox barraTitulo = new HBox(titulo, spacer, btnNuevoHospital);
         barraTitulo.setAlignment(Pos.CENTER_LEFT);
 
+        HBox barraBusqueda = new HBox(12, buscador, lblContador);
+        barraBusqueda.setAlignment(Pos.CENTER_LEFT);
+
         setSpacing(15);
         setPadding(new Insets(24));
-        getChildren().addAll(barraTitulo, buscador, tabla);
+        getChildren().addAll(barraTitulo, barraBusqueda, tabla);
+        VBox.setVgrow(tabla, Priority.ALWAYS);
     }
 
-    /**
-     * Registra los eventos de la vista: buscador con orden por relevancia
-     * y botón de nuevo hospital.
-     */
     private void registrarEventos() {
-        buscador.textProperty().addListener((obs, anterior, texto) -> {
-            if (texto == null || texto.isBlank()) {
-                tabla.setItems(FXCollections.observableArrayList(todosLosHospitales));
-                return;
-            }
-            String t = texto.toLowerCase().trim();
-            List<HospitalFila> ordenados = todosLosHospitales.stream()
-                    .sorted(Comparator.comparingInt((HospitalFila h) -> puntuacion(h, t)).reversed())
-                    .toList();
-            tabla.setItems(FXCollections.observableArrayList(ordenados));
-        });
-
+        buscador.textProperty().addListener((obs, anterior, texto) -> aplicarBusqueda(texto));
         btnNuevoHospital.setOnAction(e -> abrirDialogoCrear());
     }
 
     /**
-     * Abre un diálogo para registrar un nuevo hospital y envía POST /hospitals.
+     * Aplica el algoritmo de búsqueda inteligente: puntúa cada hospital
+     * frente al texto, descarta los que no coinciden cuando hay texto,
+     * y los ordena de mayor a menor relevancia.
      */
+    private void aplicarBusqueda(String texto) {
+        if (texto == null || texto.isBlank()) {
+            for (HospitalFila h : todosLosHospitales) h.setCampoCoincidente("");
+            tabla.setItems(FXCollections.observableArrayList(todosLosHospitales));
+            actualizarContador(todosLosHospitales.size(), todosLosHospitales.size());
+            return;
+        }
+        String t = texto.toLowerCase().trim();
+        List<HospitalFila> resultados = todosLosHospitales.stream()
+                .peek(h -> h.setCampoCoincidente(detectarCampoCoincidente(h, t)))
+                .filter(h -> puntuacion(h, t) > 0)
+                .sorted(Comparator.comparingInt((HospitalFila h) -> puntuacion(h, t)).reversed())
+                .toList();
+        tabla.setItems(FXCollections.observableArrayList(resultados));
+        actualizarContador(resultados.size(), todosLosHospitales.size());
+    }
+
+    private void actualizarContador(int mostrados, int total) {
+        if (mostrados == total) {
+            lblContador.setText(total + (total == 1 ? " hospital" : " hospitales"));
+        } else {
+            lblContador.setText(mostrados + " de " + total + " hospitales");
+        }
+    }
+
     private void abrirDialogoCrear() {
         Dialog<HospitalService.HospitalCreateBody> dialog = new Dialog<>();
         dialog.setTitle("Nuevo Hospital");
+        dialog.setHeaderText("Registrar un nuevo hospital");
+        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
 
-        TextField txtCodigo    = new TextField();
-        txtCodigo.setPromptText("Ej: HOS-004");
-        TextField txtNombre    = new TextField();
-        txtNombre.setPromptText("Nombre del hospital");
-        TextField txtDireccion = new TextField();
-        txtDireccion.setPromptText("Dirección");
-        TextField txtTelefono  = new TextField();
-        txtTelefono.setPromptText("Ej: (601) 000-0000");
-        TextField txtCiudad    = new TextField();
-        txtCiudad.setPromptText("Código de ciudad");
+        TextField txtCodigo    = campoTexto("", "Ej: HOS-004");
+        TextField txtNombre    = campoTexto("", "Nombre del hospital");
+        TextField txtDireccion = campoTexto("", "Dirección física");
+        TextField txtTelefono  = campoTexto("", "Ej: (601) 000-0000");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(16));
-        grid.add(new Label("Código:"),     0, 0); grid.add(txtCodigo,    1, 0);
-        grid.add(new Label("Nombre:"),     0, 1); grid.add(txtNombre,    1, 1);
-        grid.add(new Label("Dirección:"),  0, 2); grid.add(txtDireccion, 1, 2);
-        grid.add(new Label("Teléfono:"),   0, 3); grid.add(txtTelefono,  1, 3);
-        grid.add(new Label("Cód. Ciudad:"),0, 4); grid.add(txtCiudad,    1, 4);
+        ComboBox<CiudadHospitalModel> cmbCiudad = comboCiudades();
+        ComboBox<String> cmbEstado = comboEstado("Activo");
+
+        Label lblErrores = new Label();
+        lblErrores.getStyleClass().add("errores-form");
+        lblErrores.setVisible(false); lblErrores.setManaged(false);
+        lblErrores.setWrapText(true);
+
+        GridPane grid = formularioGrid();
+        agregarFila(grid, 0, "Código",    txtCodigo);
+        agregarFila(grid, 1, "Nombre",    txtNombre);
+        agregarFila(grid, 2, "Dirección", txtDireccion);
+        agregarFila(grid, 3, "Teléfono",  txtTelefono);
+        agregarFila(grid, 4, "Ciudad",    cmbCiudad);
+        agregarFila(grid, 5, "Estado",    cmbEstado);
+        grid.add(lblErrores, 0, 6, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().setPrefSize(520, 540);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar");
+        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Crear hospital");
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
 
-        dialog.setResultConverter(btn -> btn == ButtonType.OK
-                ? new HospitalService.HospitalCreateBody(
-                        txtCodigo.getText(), txtNombre.getText(), txtDireccion.getText(),
-                        txtTelefono.getText(), txtCiudad.getText(), true)
-                : null);
+        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
+            StringBuilder sb = new StringBuilder();
+            String e1 = Validacion.requerido("Código", Validacion.texto(txtCodigo));
+            String e2 = Validacion.formatoCodigo("Código", Validacion.texto(txtCodigo));
+            String e3 = codigoYaExiste(Validacion.texto(txtCodigo));
+            String resto = validarHospitalForm(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
+            Validacion.marcarInvalido(txtCodigo, e1 != null || e2 != null || e3 != null);
+            if (e1 != null) sb.append(e1).append("\n");
+            else if (e2 != null) sb.append(e2).append("\n");
+            else if (e3 != null) sb.append(e3).append("\n");
+            if (resto != null) sb.append(resto);
+            if (sb.length() > 0) { mostrarErroresInline(lblErrores, sb.toString().trim()); ev.consume(); }
+        });
 
+        dialog.setResultConverter(btn -> {
+            if (btn != ButtonType.OK) return null;
+            CiudadHospitalModel c = cmbCiudad.getValue();
+            return new HospitalService.HospitalCreateBody(
+                    Validacion.texto(txtCodigo), Validacion.texto(txtNombre),
+                    Validacion.texto(txtDireccion), Validacion.texto(txtTelefono),
+                    c.codigo, "Activo".equals(cmbEstado.getValue()));
+        });
+
+        cargarEstilosEn(dialog);
         dialog.showAndWait().ifPresent(body -> {
             Task<HospitalModel> task = new Task<>() {
                 @Override
@@ -288,27 +390,158 @@ public class HospitalView extends VBox {
                     return hospitalService.createHospital(body);
                 }
             };
-            task.setOnSucceeded(e -> cargarHospitales());
-            task.setOnFailed(e -> mostrarError("Error al crear el hospital.\n" +
-                    "Verifica que el código y ciudad sean válidos."));
+            task.setOnSucceeded(e -> {
+                Toast.success(this, "Hospital '" + body.nombre() + "' creado correctamente");
+                cargarHospitales();
+            });
+            task.setOnFailed(e -> {
+                Toast.error(this, "Error al crear el hospital");
+                mostrarError("Error al crear el hospital.\n" +
+                        "Verifica que el código y ciudad sean válidos.");
+            });
             new Thread(task).start();
         });
     }
 
     /**
      * Calcula qué tan relevante es un hospital para el texto buscado.
-     * Mayor número = más relevante = sube en la tabla.
+     * Mayor número = más relevante. Devuelve 0 si no hay coincidencia.
      */
     private int puntuacion(HospitalFila h, String texto) {
-        String nombre = h.getNombre().toLowerCase();
-        String ciudad = h.getCiudad().toLowerCase();
-        String codigo = h.getCodigo().toLowerCase();
-        if (nombre.startsWith(texto))            return 4;
-        if (nombre.contains(texto))              return 3;
-        if (ciudad.startsWith(texto))            return 2;
-        if (ciudad.contains(texto)
-                || codigo.contains(texto))       return 1;
-        return 0; // no coincide, pero sigue apareciendo al final
+        String nombre    = h.getNombre().toLowerCase();
+        String direccion = h.getDireccion().toLowerCase();
+        String codigo    = h.getCodigo().toLowerCase();
+        String telefono  = h.getTelefono().toLowerCase();
+        String ciudad    = h.getCiudad().toLowerCase();
+
+        if (nombre.equals(texto))         return 100;
+        if (codigo.equals(texto))         return 95;
+        if (nombre.startsWith(texto))     return 80;
+        if (codigo.startsWith(texto))     return 70;
+        if (nombre.contains(texto))       return 60;
+        if (ciudad.startsWith(texto))     return 50;
+        if (ciudad.contains(texto))       return 40;
+        if (direccion.contains(texto))    return 30;
+        if (telefono.contains(texto))     return 20;
+        if (codigo.contains(texto))       return 15;
+        return 0;
+    }
+
+    /** Determina cuál campo fue el responsable de la coincidencia. */
+    private String detectarCampoCoincidente(HospitalFila h, String texto) {
+        if (h.getNombre().toLowerCase().contains(texto))    return "nombre";
+        if (h.getCodigo().toLowerCase().contains(texto))    return "código";
+        if (h.getCiudad().toLowerCase().contains(texto))    return "ciudad";
+        if (h.getDireccion().toLowerCase().contains(texto)) return "dirección";
+        if (h.getTelefono().toLowerCase().contains(texto))  return "teléfono";
+        return "";
+    }
+
+    /* ---------- Helpers de formulario ---------- */
+
+    private TextField campoTexto(String inicial, String prompt) {
+        TextField tf = new TextField(inicial == null ? "" : inicial);
+        tf.setPromptText(prompt);
+        tf.getStyleClass().add("campo-form");
+        tf.setPrefHeight(36);
+        return tf;
+    }
+
+    private ComboBox<CiudadHospitalModel> comboCiudades() {
+        ComboBox<CiudadHospitalModel> cmb = new ComboBox<>();
+        cmb.setMaxWidth(Double.MAX_VALUE);
+        cmb.setPrefHeight(36);
+        cmb.setPromptText("Selecciona una ciudad");
+        cmb.getItems().setAll(ciudadesCache);
+        cmb.getStyleClass().add("campo-form");
+        return cmb;
+    }
+
+    private ComboBox<String> comboEstado(String inicial) {
+        ComboBox<String> cmb = new ComboBox<>();
+        cmb.setMaxWidth(Double.MAX_VALUE);
+        cmb.setPrefHeight(36);
+        cmb.getItems().addAll("Activo", "Inactivo");
+        cmb.setValue(inicial);
+        cmb.getStyleClass().add("campo-form");
+        return cmb;
+    }
+
+    private GridPane formularioGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14); grid.setVgap(14);
+        grid.setPadding(new Insets(22, 24, 18, 24));
+        ColumnConstraints c0 = new ColumnConstraints();
+        c0.setMinWidth(110); c0.setHalignment(javafx.geometry.HPos.RIGHT);
+        ColumnConstraints c1 = new ColumnConstraints();
+        c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
+        grid.getColumnConstraints().addAll(c0, c1);
+        return grid;
+    }
+
+    private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
+        Label lbl = new Label(etiqueta);
+        lbl.getStyleClass().add("etiqueta-form");
+        grid.add(lbl, 0, fila);
+        grid.add(control, 1, fila);
+        if (control instanceof Region r) GridPane.setHgrow(r, Priority.ALWAYS);
+    }
+
+    /**
+     * Ejecuta las validaciones comunes para los formularios de hospital.
+     * Marca visualmente los controles con error y devuelve un mensaje
+     * agrupado, o {@code null} si no hay errores.
+     */
+    private String validarHospitalForm(TextField txtNombre, TextField txtTelefono,
+                                       TextField txtDireccion,
+                                       ComboBox<CiudadHospitalModel> cmbCiudad,
+                                       ComboBox<String> cmbEstado) {
+        Validacion.limpiarEstado(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
+        StringBuilder sb = new StringBuilder();
+
+        String e;
+        e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
+        if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 50);
+        Validacion.marcarInvalido(txtNombre, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.requerido("Teléfono", Validacion.texto(txtTelefono));
+        if (e == null) e = Validacion.formatoTelefono(Validacion.texto(txtTelefono));
+        if (e == null) e = Validacion.longitudMax("Teléfono", Validacion.texto(txtTelefono), 20);
+        Validacion.marcarInvalido(txtTelefono, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.requerido("Dirección", Validacion.texto(txtDireccion));
+        if (e == null) e = Validacion.longitudMax("Dirección", Validacion.texto(txtDireccion), 150);
+        Validacion.marcarInvalido(txtDireccion, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.comboSeleccionado("una ciudad", cmbCiudad);
+        Validacion.marcarInvalido(cmbCiudad, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        e = Validacion.comboSeleccionado("un estado", cmbEstado);
+        Validacion.marcarInvalido(cmbEstado, e != null);
+        if (e != null) sb.append(e).append("\n");
+
+        return sb.length() == 0 ? null : sb.toString().trim();
+    }
+
+    private String codigoYaExiste(String codigo) {
+        if (codigo == null || codigo.isBlank()) return null;
+        boolean existe = todosLosHospitales.stream()
+                .anyMatch(h -> codigo.equalsIgnoreCase(h.getCodigo()));
+        return existe ? "• Ya existe un hospital con el código '" + codigo + "'" : null;
+    }
+
+    private void mostrarErroresInline(Label lbl, String mensaje) {
+        lbl.setText(mensaje);
+        lbl.setVisible(true); lbl.setManaged(true);
+    }
+
+    private void cargarEstilosEn(Dialog<?> dialog) {
+        dialog.getDialogPane().getStylesheets().add(
+                getClass().getResource("/styles/hospital/hospital.css").toExternalForm());
     }
 
     private void cargarEstilos() {

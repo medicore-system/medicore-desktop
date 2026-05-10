@@ -1,15 +1,18 @@
+/* =========================================================
+   Tema Hospital - Vista Detalle (áreas internas)
+   ========================================================= */
 .hospital-detalle-view {
-    -fx-background-color: #f5f6fa;
+    -fx-background-color: linear-gradient(to bottom, #f0f7fa, #e8f1f5);
 }
 
 .nombre-hospital {
-    -fx-font-size: 18px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-text-fill: #111827;
+    -fx-text-fill: #0f2942;
 }
 .subtitulo {
     -fx-font-size: 12px;
-    -fx-text-fill: #9ca3af;
+    -fx-text-fill: #5b7a8c;
 }
 .header-detalle {
     -fx-alignment: center-left;
@@ -17,115 +20,140 @@
 }
 
 #btnNuevaArea {
-    -fx-background-color: #1e3a5f;
+    -fx-background-color: linear-gradient(to bottom, #1e5f8c, #1e3a5f);
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 13px;
-    -fx-padding: 10 18;
+    -fx-padding: 10 20;
     -fx-background-radius: 8;
     -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(30, 58, 95, 0.25), 8, 0, 0, 2);
 }
 #btnNuevaArea:hover {
-    -fx-background-color: #16304f;
+    -fx-background-color: linear-gradient(to bottom, #1e6ea0, #16304f);
 }
 
+/* ---------- Cards de info ---------- */
 .card-info {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
-    -fx-padding: 14 18;
-    -fx-min-height: 70;
+    -fx-border-color: #cfe1eb;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 16 20;
+    -fx-min-height: 72;
+    -fx-effect: dropshadow(gaussian, rgba(30, 58, 95, 0.06), 6, 0, 0, 2);
 }
 .card-etiqueta {
     -fx-font-size: 11px;
-    -fx-text-fill: #9ca3af;
+    -fx-text-fill: #5b7a8c;
     -fx-font-weight: bold;
 }
+.card-info .label:not(.card-etiqueta) {
+    -fx-text-fill: #0f2942;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
 
-/* Card de estado con color según valor */
 .card-estado-activo {
-    -fx-border-color: #bbf7d0;
-    -fx-background-color: #f0fdf4;
+    -fx-border-color: #a7f3d0;
+    -fx-background-color: #ecfdf5;
 }
 .card-estado-inactivo {
     -fx-border-color: #fecaca;
-    -fx-background-color: #fff5f5;
+    -fx-background-color: #fef2f2;
 }
 .valor-activo {
-    -fx-text-fill: #15803d;
+    -fx-text-fill: #047857;
     -fx-font-weight: bold;
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
 }
 .valor-inactivo {
     -fx-text-fill: #b91c1c;
     -fx-font-weight: bold;
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
 }
 
 .titulo-areas {
-    -fx-font-size: 15px;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: #111827;
+    -fx-text-fill: #0f2942;
 }
 
 #cmbTipo {
     -fx-background-color: white;
-    -fx-border-color: #e2e5ec;
+    -fx-border-color: #cfe1eb;
     -fx-border-radius: 7;
     -fx-background-radius: 7;
     -fx-padding: 4 8;
     -fx-font-size: 12px;
-    -fx-pref-width: 160;
+    -fx-pref-width: 170;
 }
 
+/* ---------- Tabla ---------- */
 .table-view {
     -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
-    -fx-border-radius: 10;
-    -fx-background-radius: 10;
+    -fx-border-color: #d1e2eb;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(30, 58, 95, 0.08), 10, 0, 0, 2);
 }
 .table-view .column-header-background {
-    -fx-background-color: #f9fafb;
-    -fx-border-color: transparent transparent #e5e7eb transparent;
+    -fx-background-color: #eaf3f8;
+    -fx-background-radius: 12 12 0 0;
+    -fx-border-color: transparent transparent #cfe1eb transparent;
     -fx-border-width: 0 0 1 0;
 }
 .table-view .column-header,
 .table-view .column-header .label {
     -fx-background-color: transparent;
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: #1e3a5f;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-padding: 10 8;
+    -fx-padding: 12 8;
 }
 .table-row-cell {
     -fx-background-color: white;
-    -fx-border-color: transparent transparent #f3f4f6 transparent;
+    -fx-border-color: transparent transparent #f0f4f7 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-cell-size: 50px;
+    -fx-cell-size: 56px;
+}
+.table-row-cell:odd {
+    -fx-background-color: #fbfcfd;
 }
 .table-row-cell:hover {
-    -fx-background-color: #f9fafb;
+    -fx-background-color: #eaf3f8;
+}
+.table-row-cell:selected {
+    -fx-background-color: #d6e9f2;
+}
+.table-row-cell:selected .text,
+.table-row-cell:selected .label,
+.table-row-cell:hover .text,
+.table-row-cell:hover .label {
+    -fx-fill: #0f2942;
+    -fx-text-fill: #0f2942;
 }
 
+/* ---------- Badges ---------- */
 .badge-estado {
     -fx-background-radius: 20;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-padding: 3 10;
+    -fx-padding: 4 12;
 }
 .badge-activo {
-    -fx-background-color: #dcfce7;
-    -fx-text-fill: #15803d;
+    -fx-background-color: #d1fae5;
+    -fx-text-fill: #047857;
 }
 .badge-inactivo {
     -fx-background-color: #fee2e2;
     -fx-text-fill: #b91c1c;
 }
 
+/* ---------- Botones de acción ---------- */
 .btn-icono {
-    -fx-background-color: #f3f4f6;
-    -fx-text-fill: #374151;
+    -fx-background-color: #eaf3f8;
+    -fx-text-fill: #1e3a5f;
     -fx-background-radius: 7;
     -fx-border-radius: 7;
     -fx-padding: 5 9;
@@ -135,6 +163,108 @@
     -fx-min-height: 32;
 }
 .btn-editar:hover {
-    -fx-background-color: #fef9c3;
+    -fx-background-color: #fef3c7;
     -fx-text-fill: #a16207;
 }
+
+/* ---------- Botón Volver ---------- */
+#btnVolver {
+    -fx-background-color: white;
+    -fx-text-fill: #1e3a5f;
+    -fx-font-weight: bold;
+    -fx-font-size: 12.5px;
+    -fx-padding: 8 14;
+    -fx-background-radius: 8;
+    -fx-border-color: #cfe1eb;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.2;
+    -fx-cursor: hand;
+}
+#btnVolver:hover {
+    -fx-background-color: #eaf3f8;
+    -fx-border-color: #1e5f8c;
+    -fx-text-fill: #1e5f8c;
+}
+
+/* ---------- Diálogos ---------- */
+.dialogo-hospital {
+    -fx-background-color: white;
+    -fx-border-color: #cfe1eb;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.dialogo-hospital > .header-panel {
+    -fx-background-color: linear-gradient(to right, #1e5f8c, #1e3a5f);
+    -fx-padding: 18 24;
+    -fx-background-radius: 12 12 0 0;
+}
+.dialogo-hospital > .header-panel .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+.dialogo-hospital .etiqueta-form {
+    -fx-text-fill: #1e3a5f;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.dialogo-hospital .label {
+    -fx-text-fill: #1e3a5f;
+    -fx-font-size: 13px;
+}
+.dialogo-hospital .campo-form,
+.dialogo-hospital .text-field,
+.dialogo-hospital .combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #cfe1eb;
+    -fx-border-width: 1.4;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 12;
+    -fx-font-size: 13.5px;
+}
+.dialogo-hospital .text-field:focused,
+.dialogo-hospital .combo-box:focused {
+    -fx-border-color: #1e5f8c;
+    -fx-effect: dropshadow(gaussian, rgba(30, 95, 140, 0.25), 6, 0, 0, 0);
+}
+.dialogo-hospital .input-invalido {
+    -fx-border-color: #ef4444 !important;
+    -fx-background-color: #fef2f2;
+}
+.dialogo-hospital .errores-form {
+    -fx-text-fill: #b91c1c;
+    -fx-background-color: #fef2f2;
+    -fx-border-color: #fecaca;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14;
+    -fx-font-size: 12.5px;
+}
+.dialogo-hospital .button-bar {
+    -fx-padding: 14 20 18 20;
+    -fx-background-color: #f7fafc;
+    -fx-background-radius: 0 0 12 12;
+}
+.dialogo-hospital .button {
+    -fx-background-color: #eaf3f8;
+    -fx-text-fill: #1e3a5f;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 9 22;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+.dialogo-hospital .button:default {
+    -fx-background-color: linear-gradient(to bottom, #1e5f8c, #1e3a5f);
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(30, 58, 95, 0.25), 6, 0, 0, 2);
+}
+.dialogo-hospital .button:hover {
+    -fx-background-color: #d6e9f2;
+}
+.dialogo-hospital .button:default:hover {
+    -fx-background-color: linear-gradient(to bottom, #1e6ea0, #16304f);
+}
+
+/* Estilos del toast viven en /styles/app.css (alcance global) */
