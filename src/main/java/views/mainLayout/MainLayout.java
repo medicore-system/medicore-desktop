@@ -7,6 +7,7 @@ import views.asignacion.AsignacionView;
 import views.ciudad.CiudadView;
 import views.costo.CostoView;
 import views.facturacion.FacturacionView;
+import views.hospital.HospitalDetalleView;
 import views.hospital.HospitalView;
 import views.medico.MedicoView;
 import views.paciente.PacienteView;
@@ -39,7 +40,9 @@ public class MainLayout extends BorderPane {
 
         //Asignamos "entiramiento" a los diferentes scenes que aparecen segun donde estemos parados
         ciudades.setOnAction    (e -> {setCenter(new CiudadView());});
-        hospitales.setOnAction  (e -> {setCenter(new HospitalView());});
+        hospitales.setOnAction(e -> setCenter(
+                new HospitalView(codigo -> setCenter(new HospitalDetalleView(codigo)))
+        ));
         medicos.setOnAction     (e -> {setCenter(new MedicoView());});
         asignaciones.setOnAction(e -> {setCenter(new AsignacionView());});
         pacientes.setOnAction   (e -> {setCenter(new PacienteView());});
