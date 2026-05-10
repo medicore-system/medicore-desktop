@@ -1,12 +1,16 @@
 package views.hospital;
 
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import models.HospitalModel;
+import services.HospitalService;
+
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -17,6 +21,7 @@ import java.util.function.Consumer;
 public class HospitalView extends VBox {
 
     private final Consumer<String> onVerHospital;
+    private final HospitalService hospitalService = new HospitalService();
 
     private Label titulo;
     private TextField buscador;
@@ -47,7 +52,38 @@ public class HospitalView extends VBox {
         buscador.setId("buscador");
 
         tabla = crearTabla();
-        tabla.setItems(cargarDatosDePrueba());
+        cargarHospitales();
+    }
+
+    /**
+     * Pide al backend la lista de hospitales (GET /hospitals) en un hilo
+     * secundario y actualiza la tabla cuando llega la respuesta.
+     * Usar Task evita que la UI se congele durante la petición HTTP.
+     */
+    private void cargarHospitales() {
+        Task<List<HospitalFila>> task = new Task<>() {
+            @Override
+            protected List<HospitalFila> call() throws Exception {
+                return hospitalService.getAll().stream()
+                        .map(h -> new HospitalFila(
+                                h.codigo,
+                                h.nombre,
+                                h.nombreCiudad,
+                                h.telefono,
+                                Boolean.TRUE.equals(h.estado) ? "Activo" : "Inactivo"))
+                        .toList();
+            }
+        };
+
+        // setOnSucceeded se ejecuta en el hilo de JavaFX — seguro para tocar la UI
+        task.setOnSucceeded(e ->
+                tabla.setItems(FXCollections.observableArrayList(task.getValue())));
+
+        task.setOnFailed(e ->
+                mostrarError("No se pudieron cargar los hospitales.\n" +
+                             "Verifica que el servidor esté corriendo en localhost:8080."));
+
+        new Thread(task).start();
     }
 
     /**
@@ -83,11 +119,9 @@ public class HospitalView extends VBox {
                     setStyle("");
                 } else {
                     setText(item);
-                    if ("Activo".equals(item)) {
-                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold;");
-                    }
+                    setStyle("Activo".equals(item)
+                            ? "-fx-text-fill: #16a34a; -fx-font-weight: bold;"
+                            : "-fx-text-fill: #dc2626; -fx-font-weight: bold;");
                 }
             }
         });
@@ -101,13 +135,12 @@ public class HospitalView extends VBox {
             {
                 btnVer.setOnAction(e -> {
                     HospitalFila fila = getTableView().getItems().get(getIndex());
-                    // Navega a la vista de detalle del hospital
                     onVerHospital.accept(fila.getCodigo());
                 });
+
                 btnEditar.setOnAction(e -> {
                     HospitalFila fila = getTableView().getItems().get(getIndex());
-                    // TODO: Hacer PUT /hospitals/{codigo}
-                    System.out.println("Editar hospital: " + fila.getCodigo());
+                    abrirDialogoEditar(fila);
                 });
             }
 
@@ -123,18 +156,51 @@ public class HospitalView extends VBox {
     }
 
     /**
-     * Retorna una lista de hospitales de prueba con datos estáticos.
-     * Debe reemplazarse con una llamada GET /hospitals al implementar HTTP.
-     *
-     * @return Lista observable de hospitales de prueba.
+     * Abre un diálogo para editar el hospital y envía PUT /hospitals/{codigo}.
      */
-    private ObservableList<HospitalFila> cargarDatosDePrueba() {
-        // TODO: Reemplazar con GET /hospitals al implementar HTTP
-        return FXCollections.observableArrayList(
-                new HospitalFila("HOS-001", "Hospital Central Bogotá",    "Bogotá",   "(601) 382-0000", "Activo"),
-                new HospitalFila("HOS-002", "Clínica del Norte Medellín", "Medellín", "(604) 444-1000", "Activo"),
-                new HospitalFila("HOS-003", "Hospital Valle del Cauca",   "Cali",     "(602) 394-8888", "Inactivo")
-        );
+    private void abrirDialogoEditar(HospitalFila fila) {
+        Dialog<HospitalService.HospitalUpdateBody> dialog = new Dialog<>();
+        dialog.setTitle("Editar Hospital");
+        dialog.setHeaderText(fila.getNombre());
+
+        TextField txtNombre    = new TextField(fila.getNombre());
+        TextField txtTelefono  = new TextField(fila.getTelefono());
+        // codigoCiudad y dirección no están en HospitalFila, así que los pedimos al usuario
+        TextField txtDireccion = new TextField();
+        TextField txtCiudad    = new TextField();
+
+        VBox formulario = new VBox(8,
+                new Label("Nombre:"),    txtNombre,
+                new Label("Teléfono:"),  txtTelefono,
+                new Label("Dirección:"), txtDireccion,
+                new Label("Cód. Ciudad:"), txtCiudad);
+        formulario.setPadding(new Insets(10));
+        dialog.getDialogPane().setContent(formulario);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.setResultConverter(btn -> {
+            if (btn == ButtonType.OK) {
+                return new HospitalService.HospitalUpdateBody(
+                        txtNombre.getText(),
+                        txtDireccion.getText(),
+                        txtTelefono.getText(),
+                        txtCiudad.getText(),
+                        "Activo".equals(fila.getEstado()));
+            }
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(body -> {
+            Task<HospitalModel> task = new Task<>() {
+                @Override
+                protected HospitalModel call() throws Exception {
+                    return hospitalService.update(fila.getCodigo(), body);
+                }
+            };
+            task.setOnSucceeded(e -> cargarHospitales());
+            task.setOnFailed(e  -> mostrarError("Error al actualizar el hospital."));
+            new Thread(task).start();
+        });
     }
 
     /**
@@ -151,8 +217,10 @@ public class HospitalView extends VBox {
      */
     private void registrarEventos() {
         buscador.setOnKeyReleased(e -> {
-            // TODO: Filtrar tabla por nombre al implementar HTTP
-            System.out.println("Buscando: " + buscador.getText());
+            String texto = buscador.getText().toLowerCase();
+            // Filtra la tabla localmente sin nueva petición al servidor
+            tabla.setItems(tabla.getItems().filtered(
+                    h -> h.getNombre().toLowerCase().contains(texto)));
         });
     }
 
@@ -166,5 +234,9 @@ public class HospitalView extends VBox {
                         .getResource("/styles/hospital/hospital.css")
                         .toExternalForm()
         );
+    }
+
+    private void mostrarError(String mensaje) {
+        new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait();
     }
 }
