@@ -11,55 +11,32 @@ public class HospitalFila {
 
     private final StringProperty codigo;
     private final StringProperty nombre;
+    private final StringProperty direccion;
     private final StringProperty ciudad;
     private final StringProperty telefono;
     private final StringProperty estado;
 
-    /**
-     * Crea una fila con la informacion de un hospital.
-     *
-     * @param codigo   Código único del hospital.
-     * @param nombre   Nombre del hospital.
-     * @param ciudad   Ciudad donde está ubicado.
-     * @param telefono Número de contacto.
-     * @param estado   Estado del hospital ("Activo" o "Inactivo").
-     */
-    public HospitalFila(String codigo, String nombre, String ciudad,
-                        String telefono, String estado) {
-        this.codigo   = new SimpleStringProperty(codigo);
-        this.nombre   = new SimpleStringProperty(nombre);
-        this.ciudad   = new SimpleStringProperty(ciudad);
-        this.telefono = new SimpleStringProperty(telefono);
-        this.estado   = new SimpleStringProperty(estado);
+    public HospitalFila(String codigo, String nombre, String direccion,
+                        String ciudad, String telefono, String estado) {
+        this.codigo    = new SimpleStringProperty(codigo);
+        this.nombre    = new SimpleStringProperty(nombre);
+        this.direccion = new SimpleStringProperty(direccion);
+        this.ciudad    = new SimpleStringProperty(ciudad);
+        this.telefono  = new SimpleStringProperty(telefono);
+        this.estado    = new SimpleStringProperty(estado);
     }
 
-    /** @return Código del hospital. */
-    public String getCodigo()   { return codigo.get(); }
+    public String getCodigo()    { return codigo.get(); }
+    public String getNombre()    { return nombre.get(); }
+    public String getDireccion() { return direccion.get(); }
+    public String getCiudad()    { return ciudad.get(); }
+    public String getTelefono()  { return telefono.get(); }
+    public String getEstado()    { return estado.get(); }
 
-    /** @return Nombre del hospital. */
-    public String getNombre()   { return nombre.get(); }
-
-    /** @return Ciudad del hospital. */
-    public String getCiudad()   { return ciudad.get(); }
-
-    /** @return Teléfono del hospital. */
-    public String getTelefono() { return telefono.get(); }
-
-    /** @return Estado del hospital. */
-    public String getEstado()   { return estado.get(); }
-
-    /** @return Propiedad observable del código. */
-    public StringProperty codigoProperty()   { return codigo; }
-
-    /** @return Propiedad observable del nombre. */
-    public StringProperty nombreProperty()   { return nombre; }
-
-    /** @return Propiedad observable de la ciudad. */
-    public StringProperty ciudadProperty()   { return ciudad; }
-
-    /** @return Propiedad observable del teléfono. */
-    public StringProperty telefonoProperty() { return telefono; }
-
-    /** @return Propiedad observable del estado. */
-    public StringProperty estadoProperty()   { return estado; }
+    public StringProperty codigoProperty()    { return codigo; }
+    public StringProperty nombreProperty()    { return nombre; }
+    public StringProperty direccionProperty() { return direccion; }
+    public StringProperty ciudadProperty()    { return ciudad; }
+    public StringProperty telefonoProperty()  { return telefono; }
+    public StringProperty estadoProperty()    { return estado; }
 }

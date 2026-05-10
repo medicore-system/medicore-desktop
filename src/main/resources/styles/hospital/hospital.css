@@ -1,30 +1,121 @@
 .hospital-view {
-    -fx-background-color: #ffffff;
+    -fx-background-color: #f5f6fa;
 }
 
 .titulo {
-    -fx-font-size: 22px;
+    -fx-font-size: 20px;
     -fx-font-weight: bold;
     -fx-text-fill: #111827;
 }
 
+#btnNuevoHospital {
+    -fx-background-color: #1e3a5f;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 10 20;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+#btnNuevoHospital:hover {
+    -fx-background-color: #16304f;
+}
+
 #buscador {
-    -fx-max-width: 320;
-    -fx-padding: 8 12;
+    -fx-pref-width: 300;
+    -fx-max-width: 300;
+    -fx-padding: 9 14;
     -fx-background-radius: 20;
     -fx-border-radius: 20;
-    -fx-border-color: #d1d5db;
+    -fx-border-color: #e2e5ec;
+    -fx-background-color: white;
     -fx-prompt-text-fill: #9ca3af;
+    -fx-font-size: 13px;
+}
+#buscador:focused {
+    -fx-border-color: #1e3a5f;
 }
 
 .table-view {
-    -fx-background-color: #ffffff;
+    -fx-background-color: white;
     -fx-border-color: #e5e7eb;
-    -fx-border-radius: 8;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
 }
 
-.table-view .column-header {
+.table-view .column-header-background {
     -fx-background-color: #f9fafb;
+    -fx-border-color: transparent transparent #e5e7eb transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .column-header,
+.table-view .column-header .label {
+    -fx-background-color: transparent;
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
+    -fx-padding: 10 8;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #f3f4f6 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-cell-size: 52px;
+}
+.table-row-cell:hover {
+    -fx-background-color: #f9fafb;
+}
+.table-row-cell:selected {
+    -fx-background-color: #eff6ff;
+}
+
+.hospital-nombre-celda {
+    -fx-font-weight: bold;
+    -fx-text-fill: #111827;
+    -fx-font-size: 13px;
+}
+.hospital-dir-celda {
+    -fx-text-fill: #9ca3af;
+    -fx-font-size: 11px;
+}
+
+.badge-estado {
+    -fx-background-radius: 20;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 3 10;
+}
+.badge-activo {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #15803d;
+}
+.badge-inactivo {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #b91c1c;
+}
+
+.btn-icono {
+    -fx-background-color: #f3f4f6;
     -fx-text-fill: #374151;
+    -fx-background-radius: 7;
+    -fx-border-radius: 7;
+    -fx-padding: 5 9;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+}
+.btn-ver:hover {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1d4ed8;
+}
+.btn-editar:hover {
+    -fx-background-color: #fef9c3;
+    -fx-text-fill: #a16207;
+}
+.btn-eliminar:hover {
+    -fx-background-color: #fee2e2;
+    -fx-text-fill: #b91c1c;
 }
