@@ -16,13 +16,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * Vista principal para la gestión de hospitales.
+ * Muestra una tabla con todos los hospitales registrados y permite
+ * buscarlos, crearlos y editarlos.
+ */
 public class HospitalView extends VBox {
 
     private final Consumer<String> onVerHospital;
     private final HospitalService hospitalService = new HospitalService();
 
     private List<HospitalFila> todosLosHospitales = new ArrayList<>();
-    private List<CiudadHospitalModel>  ciudadesCache      = new ArrayList<>();
+    private List<CiudadHospitalModel> ciudadesCache = new ArrayList<>();
 
     private Label titulo;
     private TextField buscador;
@@ -30,6 +35,11 @@ public class HospitalView extends VBox {
     private Button btnNuevoHospital;
     private TableView<HospitalFila> tabla;
 
+    /**
+     * Constructor que recibe el callback de navegación al detalle del hospital.
+     *
+     * @param onVerHospital Acción que recibe el código del hospital al pulsar "Ver".
+     */
     public HospitalView(Consumer<String> onVerHospital) {
         this.onVerHospital = onVerHospital;
         iniciarComponentes();
@@ -38,6 +48,9 @@ public class HospitalView extends VBox {
         cargarEstilos();
     }
 
+    /**
+     * Inicializa los componentes visuales y dispara la carga de datos desde el servidor.
+     */
     private void iniciarComponentes() {
         titulo = new Label("Gestión de Hospitales");
         titulo.getStyleClass().add("titulo");
@@ -57,17 +70,19 @@ public class HospitalView extends VBox {
         cargarCiudades();
     }
 
+    /**
+     * Carga todos los hospitales desde el servidor en un hilo secundario
+     * y actualiza la tabla al terminar.
+     */
     private void cargarHospitales() {
         Task<List<HospitalFila>> task = new Task<>() {
             @Override
             protected List<HospitalFila> call() throws Exception {
                 return hospitalService.getAll().stream()
                         .map(h -> new HospitalFila(
-                                h.codigo,
-                                h.nombre,
+                                h.codigo, h.nombre,
                                 h.direccion != null ? h.direccion : "",
-                                h.nombreCiudad,
-                                h.telefono,
+                                h.nombreCiudad, h.telefono,
                                 Boolean.TRUE.equals(h.estado) ? "Activo" : "Inactivo",
                                 h.codigoCiudad))
                         .toList();
@@ -79,10 +94,14 @@ public class HospitalView extends VBox {
         });
         task.setOnFailed(e ->
                 mostrarError("No se pudieron cargar los hospitales.\n" +
-                             "Verifica que el servidor esté corriendo en localhost:8080."));
+                        "Verifica que el servidor esté corriendo en localhost:8080."));
         new Thread(task).start();
     }
 
+    /**
+     * Carga la lista de ciudades disponibles en un hilo secundario
+     * para usarlas en los formularios de creación y edición.
+     */
     private void cargarCiudades() {
         Task<List<CiudadHospitalModel>> task = new Task<>() {
             @Override
@@ -94,6 +113,11 @@ public class HospitalView extends VBox {
         new Thread(task).start();
     }
 
+    /**
+     * Crea y configura la tabla con sus columnas y comportamiento por celda.
+     *
+     * @return TableView configurado con las columnas de hospital.
+     */
     private TableView<HospitalFila> crearTabla() {
         TableView<HospitalFila> tv = new TableView<>();
         tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -110,7 +134,7 @@ public class HospitalView extends VBox {
             private final Label lblNombre = new Label();
             private final Label lblDir    = new Label();
             private final Label lblMatch  = new Label();
-            private final VBox  contenido = new VBox(2, lblNombre, lblDir, lblMatch);
+            private final VBox contenido  = new VBox(2, lblNombre, lblDir, lblMatch);
             {
                 lblNombre.getStyleClass().add("hospital-nombre-celda");
                 lblDir.getStyleClass().add("hospital-dir-celda");
@@ -195,12 +219,25 @@ public class HospitalView extends VBox {
         return tv;
     }
 
+    /**
+     * Crea un botón con ícono y clases CSS aplicadas.
+     *
+     * @param icono  Símbolo o texto que aparece en el botón.
+     * @param clases Clases CSS a aplicar.
+     * @return Botón configurado.
+     */
     private Button crearBtnIcono(String icono, String... clases) {
         Button btn = new Button(icono);
         btn.getStyleClass().addAll(clases);
         return btn;
     }
 
+    /**
+     * Abre un diálogo para editar los datos de un hospital existente.
+     * Al confirmar, envía los cambios al servidor y recarga la tabla.
+     *
+     * @param fila Fila del hospital a editar.
+     */
     private void abrirDialogoEditar(HospitalFila fila) {
         Dialog<HospitalService.HospitalUpdateBody> dialog = new Dialog<>();
         dialog.setTitle("Editar Hospital");
@@ -274,6 +311,9 @@ public class HospitalView extends VBox {
         });
     }
 
+    /**
+     * Organiza los componentes dentro del layout de la vista.
+     */
     private void configurarLayout() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -289,6 +329,9 @@ public class HospitalView extends VBox {
         VBox.setVgrow(tabla, Priority.ALWAYS);
     }
 
+    /**
+     * Registra los eventos de los componentes interactivos de la vista.
+     */
     private void registrarEventos() {
         buscador.textProperty().addListener((obs, anterior, texto) -> aplicarBusqueda(texto));
         btnNuevoHospital.setOnAction(e -> abrirDialogoCrear());
@@ -316,6 +359,12 @@ public class HospitalView extends VBox {
         actualizarContador(resultados.size(), todosLosHospitales.size());
     }
 
+    /**
+     * Actualiza el label contador según cuántos hospitales se están mostrando.
+     *
+     * @param mostrados Cantidad de hospitales visibles tras la búsqueda.
+     * @param total     Cantidad total de hospitales cargados.
+     */
     private void actualizarContador(int mostrados, int total) {
         if (mostrados == total) {
             lblContador.setText(total + (total == 1 ? " hospital" : " hospitales"));
@@ -324,6 +373,10 @@ public class HospitalView extends VBox {
         }
     }
 
+    /**
+     * Abre un diálogo para registrar un nuevo hospital.
+     * Al confirmar, envía los datos al servidor y recarga la tabla.
+     */
     private void abrirDialogoCrear() {
         Dialog<HospitalService.HospitalCreateBody> dialog = new Dialog<>();
         dialog.setTitle("Nuevo Hospital");
@@ -361,9 +414,9 @@ public class HospitalView extends VBox {
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
             StringBuilder sb = new StringBuilder();
-            String e1 = Validacion.requerido("Código", Validacion.texto(txtCodigo));
-            String e2 = Validacion.formatoCodigo("Código", Validacion.texto(txtCodigo));
-            String e3 = codigoYaExiste(Validacion.texto(txtCodigo));
+            String e1   = Validacion.requerido("Código", Validacion.texto(txtCodigo));
+            String e2   = Validacion.formatoCodigo("Código", Validacion.texto(txtCodigo));
+            String e3   = codigoYaExiste(Validacion.texto(txtCodigo));
             String resto = validarHospitalForm(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
             Validacion.marcarInvalido(txtCodigo, e1 != null || e2 != null || e3 != null);
             if (e1 != null) sb.append(e1).append("\n");
@@ -414,20 +467,26 @@ public class HospitalView extends VBox {
         String telefono  = h.getTelefono().toLowerCase();
         String ciudad    = h.getCiudad().toLowerCase();
 
-        if (nombre.equals(texto))         return 100;
-        if (codigo.equals(texto))         return 95;
-        if (nombre.startsWith(texto))     return 80;
-        if (codigo.startsWith(texto))     return 70;
-        if (nombre.contains(texto))       return 60;
-        if (ciudad.startsWith(texto))     return 50;
-        if (ciudad.contains(texto))       return 40;
-        if (direccion.contains(texto))    return 30;
-        if (telefono.contains(texto))     return 20;
-        if (codigo.contains(texto))       return 15;
+        if (nombre.equals(texto))      return 100;
+        if (codigo.equals(texto))      return 95;
+        if (nombre.startsWith(texto))  return 80;
+        if (codigo.startsWith(texto))  return 70;
+        if (nombre.contains(texto))    return 60;
+        if (ciudad.startsWith(texto))  return 50;
+        if (ciudad.contains(texto))    return 40;
+        if (direccion.contains(texto)) return 30;
+        if (telefono.contains(texto))  return 20;
+        if (codigo.contains(texto))    return 15;
         return 0;
     }
 
-    /** Determina cuál campo fue el responsable de la coincidencia. */
+    /**
+     * Determina cuál campo fue el responsable de la coincidencia.
+     *
+     * @param h     Hospital a evaluar.
+     * @param texto Texto buscado en minúsculas.
+     * @return Nombre del campo coincidente, o cadena vacía si no hay ninguno.
+     */
     private String detectarCampoCoincidente(HospitalFila h, String texto) {
         if (h.getNombre().toLowerCase().contains(texto))    return "nombre";
         if (h.getCodigo().toLowerCase().contains(texto))    return "código";
@@ -437,8 +496,13 @@ public class HospitalView extends VBox {
         return "";
     }
 
-    /* ---------- Helpers de formulario ---------- */
-
+    /**
+     * Crea un campo de texto con valor inicial y texto de ayuda.
+     *
+     * @param inicial Valor inicial del campo.
+     * @param prompt  Texto de ayuda que aparece cuando el campo está vacío.
+     * @return TextField configurado.
+     */
     private TextField campoTexto(String inicial, String prompt) {
         TextField tf = new TextField(inicial == null ? "" : inicial);
         tf.setPromptText(prompt);
@@ -447,6 +511,11 @@ public class HospitalView extends VBox {
         return tf;
     }
 
+    /**
+     * Crea un ComboBox de ciudades precargado con la caché disponible.
+     *
+     * @return ComboBox configurado con las ciudades cargadas.
+     */
     private ComboBox<CiudadHospitalModel> comboCiudades() {
         ComboBox<CiudadHospitalModel> cmb = new ComboBox<>();
         cmb.setMaxWidth(Double.MAX_VALUE);
@@ -457,6 +526,12 @@ public class HospitalView extends VBox {
         return cmb;
     }
 
+    /**
+     * Crea un ComboBox de estado con las opciones "Activo" e "Inactivo".
+     *
+     * @param inicial Valor seleccionado por defecto.
+     * @return ComboBox configurado.
+     */
     private ComboBox<String> comboEstado(String inicial) {
         ComboBox<String> cmb = new ComboBox<>();
         cmb.setMaxWidth(Double.MAX_VALUE);
@@ -467,6 +542,11 @@ public class HospitalView extends VBox {
         return cmb;
     }
 
+    /**
+     * Crea un GridPane base con dos columnas para los formularios de la vista.
+     *
+     * @return GridPane configurado con espaciado y restricciones de columna.
+     */
     private GridPane formularioGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(14); grid.setVgap(14);
@@ -479,6 +559,14 @@ public class HospitalView extends VBox {
         return grid;
     }
 
+    /**
+     * Agrega una fila con etiqueta y control al GridPane del formulario.
+     *
+     * @param grid     GridPane destino.
+     * @param fila     Índice de la fila donde se inserta.
+     * @param etiqueta Texto descriptivo del campo.
+     * @param control  Componente de entrada a mostrar.
+     */
     private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
         Label lbl = new Label(etiqueta);
         lbl.getStyleClass().add("etiqueta-form");
@@ -498,8 +586,8 @@ public class HospitalView extends VBox {
                                        ComboBox<String> cmbEstado) {
         Validacion.limpiarEstado(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
         StringBuilder sb = new StringBuilder();
-
         String e;
+
         e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
         if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 50);
         Validacion.marcarInvalido(txtNombre, e != null);
@@ -527,6 +615,12 @@ public class HospitalView extends VBox {
         return sb.length() == 0 ? null : sb.toString().trim();
     }
 
+    /**
+     * Verifica si ya existe un hospital con el código ingresado en la lista actual.
+     *
+     * @param codigo Código a verificar.
+     * @return Mensaje de error si ya existe, o {@code null} si está disponible.
+     */
     private String codigoYaExiste(String codigo) {
         if (codigo == null || codigo.isBlank()) return null;
         boolean existe = todosLosHospitales.stream()
@@ -534,22 +628,41 @@ public class HospitalView extends VBox {
         return existe ? "• Ya existe un hospital con el código '" + codigo + "'" : null;
     }
 
+    /**
+     * Muestra un mensaje de error en el Label de errores del formulario.
+     *
+     * @param lbl     Label donde se muestra el error.
+     * @param mensaje Texto del error a mostrar.
+     */
     private void mostrarErroresInline(Label lbl, String mensaje) {
         lbl.setText(mensaje);
         lbl.setVisible(true); lbl.setManaged(true);
     }
 
+    /**
+     * Aplica los estilos CSS de esta vista al diálogo indicado.
+     *
+     * @param dialog Diálogo al que se le aplican los estilos.
+     */
     private void cargarEstilosEn(Dialog<?> dialog) {
         dialog.getDialogPane().getStylesheets().add(
                 getClass().getResource("/styles/hospital/hospital.css").toExternalForm());
     }
 
+    /**
+     * Aplica los estilos CSS a la vista principal.
+     */
     private void cargarEstilos() {
         getStyleClass().add("hospital-view");
         getStylesheets().add(
                 getClass().getResource("/styles/hospital/hospital.css").toExternalForm());
     }
 
+    /**
+     * Muestra un diálogo de error con el mensaje indicado.
+     *
+     * @param mensaje Texto del error a mostrar al usuario.
+     */
     private void mostrarError(String mensaje) {
         new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait();
     }
