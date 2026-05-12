@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Único punto de contacto entre el frontend y los endpoints
- * de hospitales/áreas del backend.
+ * de hospitales y áreas del backend.
  *
  * Todos los métodos son bloqueantes (síncronos). Las vistas los llaman
  * siempre dentro de un Task de JavaFX para no congelar la interfaz.
@@ -26,13 +26,24 @@ public class HospitalService {
     private final HttpClient http = HttpClient.newHttpClient();
     private final Gson gson = new Gson();
 
-    /** GET /hospitals — lista todos los hospitales. */
+    /**
+     * Lista todos los hospitales registrados en el sistema.
+     *
+     * @return Lista de hospitales obtenida del servidor.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public List<HospitalModel> getAll() throws Exception {
         String json = get("/hospitals");
         return gson.fromJson(json, new TypeToken<List<HospitalModel>>() {}.getType());
     }
 
-    /** GET /hospitals/{codigo} — obtiene un hospital por su código. */
+    /**
+     * Obtiene la información completa de un hospital por su código.
+     *
+     * @param codigo Código único del hospital.
+     * @return Hospital encontrado.
+     * @throws Exception si el hospital no existe o el servidor falla.
+     */
     public HospitalModel getById(String codigo) throws Exception {
         String json = get("/hospitals/" + codigo);
         return gson.fromJson(json, HospitalModel.class);
@@ -40,42 +51,74 @@ public class HospitalService {
 
     /**
      * Crea un nuevo hospital en el sistema.
-     * Mapea al endpoint POST /hospitals del backend.
      *
-     * @param body datos del hospital a crear
-     * @return el hospital creado con los datos asignados por el servidor
-     * @throws Exception si el servidor responde con un código de error
+     * @param body Datos del hospital a crear.
+     * @return Hospital creado con los datos asignados por el servidor.
+     * @throws Exception si el servidor responde con un código de error.
      */
     public HospitalModel createHospital(HospitalCreateBody body) throws Exception {
         String json = post("/hospitals", gson.toJson(body));
         return gson.fromJson(json, HospitalModel.class);
     }
 
-    /** PUT /hospitals/{codigo} — actualiza los datos de un hospital. */
+    /**
+     * Actualiza los datos de un hospital existente.
+     *
+     * @param codigo Código del hospital a actualizar.
+     * @param body   Nuevos datos del hospital.
+     * @return Hospital actualizado.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public HospitalModel update(String codigo, HospitalUpdateBody body) throws Exception {
         String json = put("/hospitals/" + codigo, gson.toJson(body));
         return gson.fromJson(json, HospitalModel.class);
     }
 
-    /** GET /cities — lista todas las ciudades disponibles. */
+    /**
+     * Lista todas las ciudades disponibles para asociar a un hospital.
+     *
+     * @return Lista de ciudades obtenida del servidor.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public List<CiudadHospitalModel> getCiudades() throws Exception {
         String json = get("/cities");
         return gson.fromJson(json, new TypeToken<List<CiudadHospitalModel>>() {}.getType());
     }
 
-    /** GET /hospitals/{codigoHospital}/areas — lista las áreas de un hospital. */
+    /**
+     * Lista las áreas internas de un hospital específico.
+     *
+     * @param codigoHospital Código del hospital.
+     * @return Lista de áreas internas del hospital.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public List<AreaInternaModel> getAreas(String codigoHospital) throws Exception {
         String json = get("/hospitals/" + codigoHospital + "/areas");
         return gson.fromJson(json, new TypeToken<List<AreaInternaModel>>() {}.getType());
     }
 
-    /** POST /hospitals/{codigoHospital}/areas — crea un área nueva en el hospital. */
+    /**
+     * Crea una nueva área interna en el hospital indicado.
+     *
+     * @param codigoHospital Código del hospital donde se crea el área.
+     * @param body           Datos del área a crear.
+     * @return Área creada con los datos asignados por el servidor.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public AreaInternaModel createArea(String codigoHospital, AreaCreateBody body) throws Exception {
         String json = post("/hospitals/" + codigoHospital + "/areas", gson.toJson(body));
         return gson.fromJson(json, AreaInternaModel.class);
     }
 
-    /** PUT /hospitals/{codigoHospital}/areas/{codigoArea} — actualiza un área. */
+    /**
+     * Actualiza los datos de un área interna existente en el hospital.
+     *
+     * @param codigoHospital Código del hospital al que pertenece el área.
+     * @param codigoArea     Código del área a actualizar.
+     * @param body           Nuevos datos del área.
+     * @return Área actualizada.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     public AreaInternaModel updateArea(String codigoHospital, String codigoArea,
                                        AreaUpdateBody body) throws Exception {
         String json = put("/hospitals/" + codigoHospital + "/areas/" + codigoArea,
@@ -84,31 +127,41 @@ public class HospitalService {
     }
 
     /**
-     * Refleja HospitalUpdateRequest del backend.
-     * Usa record para que Gson lo serialice directamente a JSON.
-     */
-    /**
-     * Refleja HospitalRequest del backend para la creación de un hospital.
+     * Cuerpo de la petición para crear un hospital.
+     * Refleja HospitalRequest del backend.
      */
     public record HospitalCreateBody(String codigo, String nombre, String direccion,
                                      String telefono, String codigoCiudad, Boolean estado) {}
 
     /**
-     * Refleja HospitalUpdateRequest del backend para la actualización de un hospital.
+     * Cuerpo de la petición para actualizar un hospital.
+     * Refleja HospitalUpdateRequest del backend.
      */
     public record HospitalUpdateBody(String nombre, String direccion,
                                      String telefono, String codigoCiudad,
                                      Boolean estado) {}
 
     /**
+     * Cuerpo de la petición para actualizar un área interna.
      * Refleja AreaInternaUpdateRequest del backend.
      */
     public record AreaUpdateBody(String nombre, String descripcion,
                                  String codigoAreaInterna) {}
 
+    /**
+     * Cuerpo de la petición para crear un área interna.
+     * Refleja AreaInternaRequest del backend.
+     */
     public record AreaCreateBody(String codigo, String nombre,
                                  String descripcion, String codigoAreaInterna) {}
 
+    /**
+     * Ejecuta una petición GET al path indicado y devuelve el cuerpo de la respuesta.
+     *
+     * @param path Ruta relativa del endpoint (ej. "/hospitals").
+     * @return Cuerpo de la respuesta como String JSON.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     private String get(String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
@@ -119,6 +172,14 @@ public class HospitalService {
         return response.body();
     }
 
+    /**
+     * Ejecuta una petición POST con cuerpo JSON al path indicado.
+     *
+     * @param path     Ruta relativa del endpoint.
+     * @param jsonBody Cuerpo de la petición en formato JSON.
+     * @return Cuerpo de la respuesta como String JSON.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     private String post(String path, String jsonBody) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
@@ -130,6 +191,14 @@ public class HospitalService {
         return response.body();
     }
 
+    /**
+     * Ejecuta una petición PUT con cuerpo JSON al path indicado.
+     *
+     * @param path     Ruta relativa del endpoint.
+     * @param jsonBody Cuerpo de la petición en formato JSON.
+     * @return Cuerpo de la respuesta como String JSON.
+     * @throws Exception si el servidor responde con un código de error.
+     */
     private String put(String path, String jsonBody) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
@@ -141,7 +210,12 @@ public class HospitalService {
         return response.body();
     }
 
-    /** Lanza excepción si el servidor devuelve un código de error (4xx, 5xx). */
+    /**
+     * Lanza una excepción si el servidor devuelve un código de error (4xx o 5xx).
+     *
+     * @param response Respuesta HTTP recibida del servidor.
+     * @throws Exception con el código y cuerpo del error si el status es 400 o mayor.
+     */
     private void validarRespuesta(HttpResponse<String> response) throws Exception {
         if (response.statusCode() >= 400) {
             throw new Exception("Error del servidor (" + response.statusCode() + "): " + response.body());
