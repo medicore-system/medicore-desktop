@@ -75,4 +75,37 @@ public final class Validacion {
     public static String texto(TextInputControl c) {
         return c.getText() == null ? "" : c.getText().trim();
     }
+
+    /**
+     * Revisa que el texto que escribió el usuario sea un número entero
+     * positivo (mayor o igual a cero). Si el usuario puso puntos o
+     * comas como separadores de miles (ej: "80.000"), los ignora antes
+     * de revisar.
+     *
+     * Reglas:
+     *  - Si el texto está vacío, devuelve null (eso lo valida el
+     *    método {@link #requerido}, no este).
+     *  - Si tiene letras u otros caracteres, devuelve un error.
+     *  - Si es un número pero negativo, devuelve un error.
+     *
+     * @param etiqueta nombre del campo que se mostrará en el mensaje
+     *                 de error (ej: "Precio").
+     * @param valor    texto que escribió el usuario.
+     * @return mensaje de error con un "•" al inicio si el valor no es
+     *         válido, o null si todo está bien.
+     */
+    public static String numeroPositivo(String etiqueta, String valor) {
+        if (valor == null || valor.isBlank()) return null;
+        String limpio = valor.replace(".", "").replace(",", "").trim();
+        if (!limpio.matches("\\d+")) {
+            return "• " + etiqueta + " debe ser un número entero positivo";
+        }
+        try {
+            long n = Long.parseLong(limpio);
+            if (n < 0) return "• " + etiqueta + " no puede ser negativo";
+        } catch (NumberFormatException e) {
+            return "• " + etiqueta + " no es un número válido";
+        }
+        return null;
+    }
 }
