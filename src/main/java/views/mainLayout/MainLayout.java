@@ -10,9 +10,10 @@ import views.facturacion.FacturacionView;
 import views.hospital.HospitalDetalleView;
 import views.hospital.HospitalView;
 import views.medico.MedicoView;
-import views.paciente.PacienteView;
+import views.usuario.UsuarioView;
 import views.reporte.ReporteView;
 import views.servicio.ServicioView;
+import views.usuario.cita.CitasUsuarioView;
 
 public class MainLayout extends BorderPane {
     private final VBox sideBar;
@@ -40,10 +41,10 @@ public class MainLayout extends BorderPane {
 
         //Asignamos "entiramiento" a los diferentes scenes que aparecen segun donde estemos parados
         ciudades.setOnAction    (e -> {setCenter(new CiudadView());});
-        hospitales.setOnAction(e -> mostrarHospitales());
+        hospitales.setOnAction  (e -> mostrarHospitales());
         medicos.setOnAction     (e -> {setCenter(new MedicoView());});
         asignaciones.setOnAction(e -> {setCenter(new AsignacionView());});
-        pacientes.setOnAction   (e -> {setCenter(new PacienteView());});
+        pacientes.setOnAction   (e -> mostrarUsuarios());
         servicios.setOnAction   (e -> {setCenter(new ServicioView());});
         costos.setOnAction      (e -> {setCenter(new CostoView());});
         reportes.setOnAction    (e -> {setCenter(new ReporteView());});
@@ -75,5 +76,9 @@ public class MainLayout extends BorderPane {
     private void mostrarHospitales() {
         setCenter(new HospitalView(codigo ->
                 setCenter(new HospitalDetalleView(codigo, this::mostrarHospitales))));
+    }
+
+    private void mostrarUsuarios(){
+        setCenter(new UsuarioView(codigo ->setCenter(new CitasUsuarioView())));
     }
 }
