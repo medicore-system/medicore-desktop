@@ -1,58 +1,88 @@
 package views.hospital;
 
+import controllers.AreaInternaController;
+import controllers.HospitalController;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import models.AreaInternaModel;
 import services.HospitalService;
-import views.areaInterna.AreaFila;
 import views.common.Toast;
-import views.common.Validacion;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Vista de detalle de un hospital.
- * Muestra la información completa del hospital, su estado y las áreas internas
- * que lo conforman. Permite crear y editar áreas, y filtrarlas por tipo.
+ *
+ * <p>Esta clase se encarga exclusivamente de:</p>
+ * <ul>
+ *     <li>Construir la interfaz gráfica en JavaFX.</li>
+ *     <li>Escuchar eventos generados por el usuario.</li>
+ *     <li>Delegar la lógica al {@code HospitalController} y {@code AreaInternaController}.</li>
+ *     <li>Actualizar la UI mediante callbacks.</li>
+ * </ul>
+ *
+ * <h2>Responsabilidades NO permitidas</h2>
+ * <ul>
+ *     <li>Consumir servicios HTTP directamente.</li>
+ *     <li>Crear o manejar {@code Task}.</li>
+ *     <li>Gestionar errores de red.</li>
+ * </ul>
  */
 public class HospitalDetalleView extends VBox {
 
+    /** Código del hospital cuya información y áreas se muestran. */
     private final String codigoHospital;
-    private final HospitalService hospitalService = new HospitalService();
+
+    /** Controlador que gestiona las áreas internas de este hospital. */
+    private final AreaInternaController areaController;
+
+    /** Controlador usado exclusivamente para cargar el encabezado del hospital. */
+    private final HospitalController hospitalController = new HospitalController();
+
+    /** Acción ejecutada al pulsar "Volver"; puede ser {@code null}. */
     private final Runnable onVolver;
 
-    private List<AreaFila> todasLasAreas = new ArrayList<>();
+    private final Label nombreHospital     = new Label("Cargando...");
 
-    private Label nombreHospital;
-    private Label subtitulo;
-    private Button btnVolver;
-    private Button btnNuevaArea;
-    private Label lblTelefono;
-    private Label lblEstado;
-    private Label lblTituloAreas;
-    private ComboBox<String> cmbTipo;
+    /** Ruta de navegación tipo breadcrumb (ej. "Colombia > Bogotá > Hospital X"). */
+    private final Label subtitulo          = new Label("");
+    private final Button btnVolver         = new Button("← Volver a hospitales");
+    private final Button btnNuevaArea      = new Button("+ Nueva Área");
+    private final Label lblTelefono        = new Label("...");
+    private final Label lblEstado          = new Label("...");
+
+    /** Título de la sección de áreas; incluye el conteo entre paréntesis al cargar. */
+    private final Label lblTituloAreas     = new Label("Áreas del Hospital");
+
+    /** Combo para filtrar la tabla por tipo de área; "Todos" si no hay selección. */
+    private final ComboBox<String> cmbTipo = new ComboBox<>();
+
+    /** Tarjeta de estado; se guarda referencia para cambiar su clase CSS según activo/inactivo. */
     private VBox cardEstado;
-    private TableView<AreaFila> tablaAreas;
+    private final TableView<AreaInternaModel> tablaAreas = new TableView<>();
 
     /**
-     * Constructor principal que recibe el código del hospital y una acción para volver.
+     * Construye la vista, conecta los controladores y lanza la carga de datos.
      *
      * @param codigoHospital Código único del hospital a mostrar.
-     * @param onVolver       Acción que se ejecuta al pulsar el botón "Volver".
+     * @param onVolver       Acción que se ejecuta al pulsar el botón "Volver"; puede ser {@code null}.
      */
     public HospitalDetalleView(String codigoHospital, Runnable onVolver) {
         this.codigoHospital = codigoHospital;
-        this.onVolver = onVolver;
-        iniciarComponentes();
+        this.onVolver       = onVolver;
+        this.areaController = new AreaInternaController(codigoHospital);
+        conectarControllers();
+        configurarComponentes();
+        configurarTabla();
         configurarLayout();
         registrarEventos();
         cargarEstilos();
+        hospitalController.cargarHospitalPorId(codigoHospital, this::mostrarInfoHospital);
+        areaController.cargarAreas();
     }
 
     /**
@@ -65,132 +95,80 @@ public class HospitalDetalleView extends VBox {
     }
 
     /**
-     * Inicializa los componentes visuales y dispara la carga de datos desde el servidor.
+     * Conecta los callbacks de ambos controladores con la UI.
      */
-    private void iniciarComponentes() {
-        nombreHospital = new Label("Cargando...");
+    private void conectarControllers() {
+        areaController.setOnDatosActualizados(areas -> {
+            tablaAreas.setItems(FXCollections.observableArrayList(areas));
+            lblTituloAreas.setText("Áreas del Hospital (" + areas.size() + ")");
+            cmbTipo.getItems().setAll(areaController.getTipos());
+        });
+        areaController.setOnError(mensaje ->
+                new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait());
+        areaController.setOnExito(mensaje ->
+                Toast.success(this, mensaje));
+        hospitalController.setOnError(mensaje ->
+                new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait());
+    }
+
+    /**
+     * Muestra los datos del hospital en el encabezado y las tarjetas de info.
+     *
+     * @param h Hospital cargado por el controller.
+     */
+    private void mostrarInfoHospital(models.HospitalModel h) {
+        nombreHospital.setText(h.nombre);
+        subtitulo.setText("Colombia > " + h.nombreCiudad + " > " + h.nombre);
+        lblTelefono.setText(h.telefono);
+        boolean activo = Boolean.TRUE.equals(h.estado);
+        lblEstado.setText(activo ? "Activo" : "Inactivo");
+        lblEstado.getStyleClass().removeAll("valor-activo", "valor-inactivo");
+        lblEstado.getStyleClass().add(activo ? "valor-activo" : "valor-inactivo");
+        if (cardEstado != null) {
+            cardEstado.getStyleClass().removeAll("card-estado-activo", "card-estado-inactivo");
+            cardEstado.getStyleClass().add(activo ? "card-estado-activo" : "card-estado-inactivo");
+        }
+    }
+
+    /**
+     * Configura los componentes visuales básicos.
+     */
+    private void configurarComponentes() {
         nombreHospital.getStyleClass().add("nombre-hospital");
-
-        subtitulo = new Label("");
         subtitulo.getStyleClass().add("subtitulo");
-
-        btnVolver = new Button("← Volver a hospitales");
         btnVolver.setId("btnVolver");
-
-        btnNuevaArea = new Button("+ Nueva Área");
         btnNuevaArea.setId("btnNuevaArea");
-
-        lblTelefono = new Label("...");
-        lblEstado   = new Label("...");
-
-        lblTituloAreas = new Label("Áreas del Hospital");
         lblTituloAreas.getStyleClass().add("titulo-areas");
-
-        cmbTipo = new ComboBox<>();
         cmbTipo.setPromptText("Tipo: Todos");
         cmbTipo.setId("cmbTipo");
-
-        tablaAreas = crearTablaAreas();
-
-        cargarInfoHospital();
-        cargarAreas();
     }
 
     /**
-     * Carga la información general del hospital desde el servidor en un hilo secundario
-     * y actualiza los componentes visuales en el hilo de JavaFX.
+     * Configura la tabla de áreas internas con todas sus columnas.
      */
-    private void cargarInfoHospital() {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                var h = hospitalService.getById(codigoHospital);
-                javafx.application.Platform.runLater(() -> {
-                    nombreHospital.setText(h.nombre);
-                    subtitulo.setText("Colombia > " + h.nombreCiudad + " > " + h.nombre);
-                    lblTelefono.setText(h.telefono);
+    private void configurarTabla() {
+        tablaAreas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tablaAreas.setPlaceholder(new Label("Este hospital aún no tiene áreas registradas."));
 
-                    boolean activo = Boolean.TRUE.equals(h.estado);
-                    lblEstado.setText(activo ? "Activo" : "Inactivo");
-                    lblEstado.getStyleClass().removeAll("valor-activo", "valor-inactivo");
-                    lblEstado.getStyleClass().add(activo ? "valor-activo" : "valor-inactivo");
-                    if (cardEstado != null) {
-                        cardEstado.getStyleClass().removeAll("card-estado-activo", "card-estado-inactivo");
-                        cardEstado.getStyleClass().add(activo ? "card-estado-activo" : "card-estado-inactivo");
-                    }
-                });
-                return null;
-            }
-        };
-        task.setOnFailed(e -> mostrarError("No se pudo cargar la información del hospital."));
-        new Thread(task).start();
-    }
+        TableColumn<AreaInternaModel, String> colNombre = new TableColumn<>("Área");
+        colNombre.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().nombre));
 
-    /**
-     * Carga las áreas internas del hospital desde el servidor en un hilo secundario.
-     * Al terminar, actualiza la tabla, el contador de áreas y el filtro por tipo.
-     */
-    private void cargarAreas() {
-        Task<List<AreaFila>> task = new Task<>() {
-            @Override
-            protected List<AreaFila> call() throws Exception {
-                return hospitalService.getAreas(codigoHospital).stream()
-                        .map(a -> new AreaFila(
-                                a.codigo,
-                                a.nombre,
-                                a.nombreAreaInterna,
-                                a.descripcion != null ? a.descripcion : "",
-                                a.codigoAreaInterna))
-                        .toList();
-            }
-        };
-        task.setOnSucceeded(e -> {
-            todasLasAreas = new ArrayList<>(task.getValue());
-            tablaAreas.setItems(FXCollections.observableArrayList(todasLasAreas));
-            lblTituloAreas.setText("Áreas del Hospital (" + todasLasAreas.size() + ")");
-            List<String> tipos = todasLasAreas.stream()
-                    .map(AreaFila::getTipo)
-                    .distinct()
-                    .sorted()
-                    .toList();
-            cmbTipo.getItems().setAll(tipos);
-        });
-        task.setOnFailed(e -> mostrarError("No se pudieron cargar las áreas del hospital."));
-        new Thread(task).start();
-    }
+        TableColumn<AreaInternaModel, String> colTipo = new TableColumn<>("Tipo");
+        colTipo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().nombreAreaInterna));
 
-    /**
-     * Crea y configura la tabla de áreas internas con sus columnas y acciones.
-     *
-     * @return TableView configurado con las columnas de áreas.
-     */
-    private TableView<AreaFila> crearTablaAreas() {
-        TableView<AreaFila> tv = new TableView<>();
-        tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tv.setPlaceholder(new Label("Este hospital aún no tiene áreas registradas."));
+        TableColumn<AreaInternaModel, String> colDescripcion = new TableColumn<>("Descripción");
+        colDescripcion.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().descripcion));
 
-        TableColumn<AreaFila, String> colNombre = new TableColumn<>("Área");
-        colNombre.setCellValueFactory(c -> c.getValue().nombreProperty());
-
-        TableColumn<AreaFila, String> colTipo = new TableColumn<>("Tipo");
-        colTipo.setCellValueFactory(c -> c.getValue().tipoProperty());
-
-        TableColumn<AreaFila, String> colDescripcion = new TableColumn<>("Descripción");
-        colDescripcion.setCellValueFactory(c -> c.getValue().descripcionProperty());
-
-        TableColumn<AreaFila, Void> colAcciones = new TableColumn<>("Acción");
+        TableColumn<AreaInternaModel, Void> colAcciones = new TableColumn<>("Acción");
         colAcciones.setMaxWidth(80);
         colAcciones.setCellFactory(col -> new TableCell<>() {
-            private final Button btnEditar = crearBtnIcono("✎", "btn-icono", "btn-editar");
+            private final Button btnEditar = btnIcono("✎", "btn-icono", "btn-editar");
             private final HBox contenedor  = new HBox(5, btnEditar);
             {
                 contenedor.setAlignment(Pos.CENTER_LEFT);
-                btnEditar.setOnAction(e -> {
-                    AreaFila f = getTableView().getItems().get(getIndex());
-                    abrirDialogoEditarArea(f);
-                });
+                btnEditar.setOnAction(e ->
+                        abrirDialogoEditarArea(getTableView().getItems().get(getIndex())));
             }
-
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
@@ -198,158 +176,11 @@ public class HospitalDetalleView extends VBox {
             }
         });
 
-        tv.getColumns().addAll(colNombre, colTipo, colDescripcion, colAcciones);
-        return tv;
+        tablaAreas.getColumns().addAll(colNombre, colTipo, colDescripcion, colAcciones);
     }
 
     /**
-     * Crea un botón con ícono y clases CSS aplicadas.
-     *
-     * @param icono  Texto o símbolo que aparece en el botón.
-     * @param clases Clases CSS a aplicar.
-     * @return Botón configurado.
-     */
-    private Button crearBtnIcono(String icono, String... clases) {
-        Button btn = new Button(icono);
-        btn.getStyleClass().addAll(clases);
-        return btn;
-    }
-
-    /**
-     * Abre un diálogo para editar los datos de un área existente.
-     * Al confirmar, envía los cambios al servidor y recarga la tabla.
-     *
-     * @param fila Fila del área a editar.
-     */
-    private void abrirDialogoEditarArea(AreaFila fila) {
-        Dialog<HospitalService.AreaUpdateBody> dialog = new Dialog<>();
-        dialog.setTitle("Editar Área");
-        dialog.setHeaderText("Editando: " + fila.getNombre());
-        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
-
-        TextField txtNombre         = campoTexto(fila.getNombre(),            "Nombre del área");
-        TextField txtDescripcion    = campoTexto(fila.getDescripcion(),       "Descripción (opcional)");
-        TextField txtCodAreaInterna = campoTexto(fila.getCodigoAreaInterna(), "Código del tipo de área");
-
-        Label lblErrores = errorLabel();
-
-        GridPane grid = formularioGrid();
-        agregarFila(grid, 0, "Nombre",        txtNombre);
-        agregarFila(grid, 1, "Descripción",   txtDescripcion);
-        agregarFila(grid, 2, "Tipo (código)", txtCodAreaInterna);
-        grid.add(lblErrores, 0, 3, 2, 1);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().setPrefSize(520, 420);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Guardar Área");
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
-
-        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String err = validarAreaForm(txtNombre, txtDescripcion, txtCodAreaInterna);
-            if (err != null) { mostrarErroresInline(lblErrores, err); ev.consume(); }
-        });
-
-        dialog.setResultConverter(btn -> btn == ButtonType.OK
-                ? new HospitalService.AreaUpdateBody(
-                Validacion.texto(txtNombre), Validacion.texto(txtDescripcion),
-                Validacion.texto(txtCodAreaInterna))
-                : null);
-
-        cargarEstilosEn(dialog);
-        dialog.showAndWait().ifPresent(body -> {
-            Task<AreaInternaModel> task = new Task<>() {
-                @Override
-                protected AreaInternaModel call() throws Exception {
-                    return hospitalService.updateArea(codigoHospital, fila.getCodigo(), body);
-                }
-            };
-            task.setOnSucceeded(e -> {
-                Toast.success(this, "Área '" + body.nombre() + "' actualizada correctamente");
-                cargarAreas();
-            });
-            task.setOnFailed(e -> {
-                Toast.error(this, "Error al actualizar el área");
-                mostrarError("Error al actualizar el área.");
-            });
-            new Thread(task).start();
-        });
-    }
-
-    /**
-     * Abre un diálogo para registrar una nueva área en el hospital.
-     * Al confirmar, envía los datos al servidor y recarga la tabla.
-     */
-    private void abrirDialogoNuevaArea() {
-        Dialog<HospitalService.AreaCreateBody> dialog = new Dialog<>();
-        dialog.setTitle("Nueva Área");
-        dialog.setHeaderText("Registrar nueva área en el hospital");
-        dialog.getDialogPane().getStyleClass().add("dialogo-hospital");
-
-        TextField txtCodigo         = campoTexto("", "Ej: AREA-004");
-        TextField txtNombre         = campoTexto("", "Ej: Consultorio 102");
-        TextField txtDescripcion    = campoTexto("", "Descripción (opcional)");
-        TextField txtCodAreaInterna = campoTexto("", "Código del tipo de área");
-
-        Label lblErrores = errorLabel();
-
-        GridPane grid = formularioGrid();
-        agregarFila(grid, 0, "Código",        txtCodigo);
-        agregarFila(grid, 1, "Nombre",        txtNombre);
-        agregarFila(grid, 2, "Descripción",   txtDescripcion);
-        agregarFila(grid, 3, "Tipo (código)", txtCodAreaInterna);
-        grid.add(lblErrores, 0, 4, 2, 1);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().setPrefSize(520, 470);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK)).setText("Crear área");
-        ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL)).setText("Cancelar");
-
-        Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
-        btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            StringBuilder sb = new StringBuilder();
-            String e1 = Validacion.requerido("Código", Validacion.texto(txtCodigo));
-            String e2 = Validacion.formatoCodigo("Código", Validacion.texto(txtCodigo));
-            String e3 = codigoAreaYaExiste(Validacion.texto(txtCodigo));
-            Validacion.marcarInvalido(txtCodigo, e1 != null || e2 != null || e3 != null);
-            if (e1 != null) sb.append(e1).append("\n");
-            else if (e2 != null) sb.append(e2).append("\n");
-            else if (e3 != null) sb.append(e3).append("\n");
-            String resto = validarAreaForm(txtNombre, txtDescripcion, txtCodAreaInterna);
-            if (resto != null) sb.append(resto);
-            if (!sb.isEmpty()) { mostrarErroresInline(lblErrores, sb.toString().trim()); ev.consume(); }
-        });
-
-        dialog.setResultConverter(btn -> btn == ButtonType.OK
-                ? new HospitalService.AreaCreateBody(
-                Validacion.texto(txtCodigo), Validacion.texto(txtNombre),
-                Validacion.texto(txtDescripcion), Validacion.texto(txtCodAreaInterna))
-                : null);
-
-        cargarEstilosEn(dialog);
-        dialog.showAndWait().ifPresent(body -> {
-            Task<AreaInternaModel> task = new Task<>() {
-                @Override
-                protected AreaInternaModel call() throws Exception {
-                    return hospitalService.createArea(codigoHospital, body);
-                }
-            };
-            task.setOnSucceeded(e -> {
-                Toast.success(this, "Área '" + body.nombre() + "' creada correctamente");
-                cargarAreas();
-            });
-            task.setOnFailed(e -> {
-                Toast.error(this, "Error al crear el área");
-                mostrarError("Error al crear el área.");
-            });
-            new Thread(task).start();
-        });
-    }
-
-    /**
-     * Organiza todos los componentes dentro del layout de la vista.
+     * Construye y organiza el layout principal de la vista.
      */
     private void configurarLayout() {
         VBox infoNombre = new VBox(3, nombreHospital, subtitulo);
@@ -379,10 +210,10 @@ public class HospitalDetalleView extends VBox {
     /**
      * Crea una tarjeta de información con etiqueta y valor.
      *
-     * @param etiqueta Texto descriptivo del campo.
-     * @param valor    Label con el valor a mostrar.
-     * @param esEstado Indica si la tarjeta corresponde al estado (aplica estilos especiales).
-     * @return VBox con la tarjeta armada.
+     * @param etiqueta Título descriptivo de la tarjeta (ej. "Teléfono").
+     * @param valor    Label que mostrará el dato dinámico.
+     * @param esEstado Si es {@code true}, añade la clase base {@code card-estado} para
+     *                 permitir colorizado dinámico según el estado del hospital.
      */
     private VBox crearCard(String etiqueta, Label valor, boolean esEstado) {
         Label lbl = new Label(etiqueta);
@@ -394,169 +225,58 @@ public class HospitalDetalleView extends VBox {
     }
 
     /**
-     * Registra los eventos de los componentes interactivos de la vista.
+     * Registra todos los listeners y eventos de la vista.
      */
     private void registrarEventos() {
         btnNuevaArea.setOnAction(e -> abrirDialogoNuevaArea());
-
-        btnVolver.setOnAction(e -> {
-            if (onVolver != null) onVolver.run();
-        });
-
+        btnVolver.setOnAction(e -> { if (onVolver != null) onVolver.run(); });
         cmbTipo.setOnAction(e -> {
             String tipo = cmbTipo.getValue();
-            if (tipo == null) {
-                tablaAreas.setItems(FXCollections.observableArrayList(todasLasAreas));
-            } else {
-                tablaAreas.setItems(FXCollections.observableArrayList(
-                        todasLasAreas.stream()
-                                .filter(a -> tipo.equals(a.getTipo()))
-                                .toList()));
-            }
+            tablaAreas.setItems(FXCollections.observableArrayList(
+                    areaController.filtrarPorTipo(tipo)));
         });
     }
 
     /**
-     * Crea un campo de texto con valor inicial y texto de ayuda.
-     *
-     * @param inicial Valor inicial del campo.
-     * @param prompt  Texto de ayuda que aparece cuando el campo está vacío.
-     * @return TextField configurado.
+     * Abre el diálogo para crear una nueva área.
      */
-    private TextField campoTexto(String inicial, String prompt) {
-        TextField tf = new TextField(inicial == null ? "" : inicial);
-        tf.setPromptText(prompt);
-        tf.getStyleClass().add("campo-form");
-        tf.setPrefHeight(36);
-        return tf;
+    private void abrirDialogoNuevaArea() {
+        new AreaFormDialog(null, body -> {
+            HospitalService.AreaCreateBody createBody = (HospitalService.AreaCreateBody) body;
+            areaController.crear(createBody, createBody.nombre());
+        }, areaController::generarCodigo).show();
     }
 
     /**
-     * Crea un GridPane base con dos columnas para los formularios de la vista.
+     * Abre el diálogo para editar un área existente.
      *
-     * @return GridPane configurado con espaciado y restricciones de columna.
+     * @param area Área a editar.
      */
-    private GridPane formularioGrid() {
-        GridPane grid = new GridPane();
-        grid.setHgap(14); grid.setVgap(14);
-        grid.setPadding(new Insets(22, 24, 18, 24));
-        ColumnConstraints c0 = new ColumnConstraints();
-        c0.setMinWidth(130); c0.setHalignment(HPos.RIGHT);
-        ColumnConstraints c1 = new ColumnConstraints();
-        c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
-        grid.getColumnConstraints().addAll(c0, c1);
-        return grid;
+    private void abrirDialogoEditarArea(AreaInternaModel area) {
+        new AreaFormDialog(area, body -> {
+            HospitalService.AreaUpdateBody updateBody = (HospitalService.AreaUpdateBody) body;
+            areaController.actualizar(area.codigo, updateBody, updateBody.nombre());
+        }, (Supplier<String>) null).show();
     }
 
     /**
-     * Agrega una fila con etiqueta y control al GridPane del formulario.
+     * Crea un botón con un icono Unicode y las clases CSS indicadas.
      *
-     * @param grid     GridPane destino.
-     * @param fila     Índice de la fila donde se inserta.
-     * @param etiqueta Texto descriptivo del campo.
-     * @param control  Componente de entrada a mostrar.
+     * @param icono  Carácter o emoji que se muestra como texto del botón.
+     * @param clases Clases CSS que se aplican al botón.
      */
-    private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
-        Label lbl = new Label(etiqueta);
-        lbl.getStyleClass().add("etiqueta-form");
-        grid.add(lbl, 0, fila);
-        grid.add(control, 1, fila);
-        if (control instanceof Region r) GridPane.setHgrow(r, Priority.ALWAYS);
+    private Button btnIcono(String icono, String... clases) {
+        Button btn = new Button(icono);
+        btn.getStyleClass().addAll(clases);
+        return btn;
     }
 
     /**
-     * Crea un Label oculto para mostrar errores de validación dentro del formulario.
-     *
-     * @return Label configurado para mensajes de error.
-     */
-    private Label errorLabel() {
-        Label l = new Label();
-        l.getStyleClass().add("errores-form");
-        l.setVisible(false); l.setManaged(false);
-        l.setWrapText(true);
-        return l;
-    }
-
-    /**
-     * Valida los campos comunes del formulario de área (nombre, descripción y tipo).
-     *
-     * @param txtNombre         Campo del nombre del área.
-     * @param txtDescripcion    Campo de la descripción.
-     * @param txtCodAreaInterna Campo del código del tipo de área.
-     * @return Mensaje de error si hay problemas, o {@code null} si todo es válido.
-     */
-    private String validarAreaForm(TextField txtNombre, TextField txtDescripcion,
-                                   TextField txtCodAreaInterna) {
-        Validacion.limpiarEstado(txtNombre, txtDescripcion, txtCodAreaInterna);
-        StringBuilder sb = new StringBuilder();
-        String e;
-
-        e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
-        if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 100);
-        Validacion.marcarInvalido(txtNombre, e != null);
-        if (e != null) sb.append(e).append("\n");
-
-        e = Validacion.longitudMax("Descripción", Validacion.texto(txtDescripcion), 250);
-        Validacion.marcarInvalido(txtDescripcion, e != null);
-        if (e != null) sb.append(e).append("\n");
-
-        e = Validacion.requerido("Tipo (código)", Validacion.texto(txtCodAreaInterna));
-        if (e == null) e = Validacion.formatoCodigo("Tipo (código)", Validacion.texto(txtCodAreaInterna));
-        Validacion.marcarInvalido(txtCodAreaInterna, e != null);
-        if (e != null) sb.append(e).append("\n");
-
-        return sb.length() == 0 ? null : sb.toString().trim();
-    }
-
-    /**
-     * Verifica si ya existe un área con el código ingresado en la lista actual.
-     *
-     * @param codigo Código a verificar.
-     * @return Mensaje de error si ya existe, o {@code null} si está disponible.
-     */
-    private String codigoAreaYaExiste(String codigo) {
-        if (codigo == null || codigo.isBlank()) return null;
-        boolean existe = todasLasAreas.stream()
-                .anyMatch(a -> codigo.equalsIgnoreCase(a.getCodigo()));
-        return existe ? "• Ya existe un área con el código '" + codigo + "'" : null;
-    }
-
-    /**
-     * Muestra un mensaje de error en el Label de errores del formulario.
-     *
-     * @param lbl     Label donde se muestra el error.
-     * @param mensaje Texto del error a mostrar.
-     */
-    private void mostrarErroresInline(Label lbl, String mensaje) {
-        lbl.setText(mensaje);
-        lbl.setVisible(true); lbl.setManaged(true);
-    }
-
-    /**
-     * Aplica los estilos CSS de esta vista al diálogo indicado.
-     *
-     * @param dialog Diálogo al que se le aplican los estilos.
-     */
-    private void cargarEstilosEn(Dialog<?> dialog) {
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/styles/hospital/hospitalDetalle.css").toExternalForm());
-    }
-
-    /**
-     * Aplica los estilos CSS a la vista principal.
+     * Carga los estilos CSS asociados a la vista.
      */
     private void cargarEstilos() {
         getStyleClass().add("hospital-detalle-view");
         getStylesheets().add(
                 getClass().getResource("/styles/hospital/hospitalDetalle.css").toExternalForm());
-    }
-
-    /**
-     * Muestra un diálogo de error con el mensaje indicado.
-     *
-     * @param mensaje Texto del error a mostrar al usuario.
-     */
-    private void mostrarError(String mensaje) {
-        new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait();
     }
 }
