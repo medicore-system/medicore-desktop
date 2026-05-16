@@ -150,6 +150,12 @@ public class MedicoView extends VBox {
                 new javafx.beans.property.SimpleStringProperty(c.getValue().getNombreEspecialidad()));
         colEps.setMaxWidth(90);
 
+        // Telefono
+        TableColumn<MedicoModel, String> colTelefono = new TableColumn<>("Telefono");
+        colTelefono.setCellValueFactory(c ->
+                new javafx.beans.property.SimpleStringProperty(c.getValue().getTelefono()));
+        colTelefono.setMaxWidth(90);
+
         TableColumn<MedicoModel, String> colEstado = new TableColumn<>("Estado");
         colEstado.setMaxWidth(100);
         colEstado.setCellValueFactory(c ->
@@ -198,7 +204,7 @@ public class MedicoView extends VBox {
         });
 
         tabla.getColumns().addAll(colDocumento, colNombre, colCorreo, colCiudad,
-                colEps, colEstado, colAcciones);
+                colEps, colTelefono, colEstado, colAcciones);
     }
 
     /**
@@ -246,7 +252,7 @@ public class MedicoView extends VBox {
     /**
      * Abre el diálogo para editar un médico.
      *
-     * @param medicoModel usuario a editar
+     * @param medicoModel médico a editar
      */
     private void abrirDialogoEditar(MedicoModel medicoModel) {
         new MedicoFormDialog(medicoModel, ciudadesCache, especialidadCache, body -> {

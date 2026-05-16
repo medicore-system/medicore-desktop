@@ -219,19 +219,31 @@ public class UsuarioFormDialog {
                            ComboBox<CiudadModel> cmbCiudad, ComboBox<EpsModel> cmbEps) {
         StringBuilder sb = new StringBuilder();
 
-        if (modoCrear && txtDocumento.getText().trim().isEmpty())
-            sb.append("• El documento es obligatorio.\n");
+        if (modoCrear && (
+                txtDocumento.getText().trim().isEmpty() ||
+                        !txtDocumento.getText().trim().matches("\\d{7,10}")
+        )) {
+            sb.append("• El documento debe contener solo números y tener entre 7 y 10 dígitos.\n");
+        }
 
-        if (txtNombre.getText().trim().isEmpty())
+        if (txtNombre.getText().trim().isEmpty()) {
             sb.append("• El nombre es obligatorio.\n");
 
-        if (txtApellido.getText().trim().isEmpty())
-            sb.append("• El apellido es obligatorio.\n");
+        } else if (!txtNombre.getText().trim().matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}")) {
+            sb.append("• El nombre debe tener mínimo 3 letras y no puede contener números ni símbolos.\n");
+        }
 
-        if (txtTelefono.getText().trim().isEmpty())
+        if (txtApellido.getText().trim().isEmpty()) {
+            sb.append("• El apellido es obligatorio.\n");
+        } else if (!txtApellido.getText().trim().matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}")) {
+            sb.append("• El apellido debe tener mínimo 3 letras y no puede contener números ni símbolos.\n");
+        }
+
+        if (txtTelefono.getText().trim().isEmpty()) {
             sb.append("• El teléfono es obligatorio.\n");
-        else if (!txtTelefono.getText().trim().matches("\\d{7,15}"))
-            sb.append("• El teléfono debe contener entre 7 y 15 dígitos.\n");
+        } else if (!txtTelefono.getText().trim().matches("\\d{7,15}")) {
+            sb.append("• El teléfono debe contener solo números y tener entre 7 y 15 dígitos.\n");
+        }
 
         if (cmbCiudad.getValue() == null)
             sb.append("• Debes seleccionar una ciudad.\n");

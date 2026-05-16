@@ -12,11 +12,34 @@ import services.MedicoService;
 
 import java.util.List;
 import java.util.function.Consumer;
-
+/**
+ * Diálogo encargado de crear o editar médicos dentro del sistema.
+ *
+ * Permite diligenciar la información básica del médico,
+ * validar los datos ingresados y enviar el resultado
+ * mediante un callback de confirmación.
+ */
 public class MedicoFormDialog {
+
+    /**
+     * Médico actual a editar.
+     * Si es null, el formulario se encuentra en modo creación.
+     */
     private final MedicoModel medicoActual;
+
+    /**
+     * Lista de ciudades disponibles.
+     */
     private final List<CiudadModel> ciudades;
+
+    /**
+     * Lista de especialidades disponibles.
+     */
     private final List<EspecialidadModel> especialidades;
+
+    /**
+     * Callback ejecutado al confirmar el formulario.
+     */
     private final Consumer<Object> onConfirmar;
 
     /**
@@ -62,7 +85,6 @@ public class MedicoFormDialog {
         TextField txtNombre    = campo(modoCrear ? "" : medicoActual.getNombre(),   "Nombre");
         TextField txtApellido  = campo(modoCrear ? "" : medicoActual.getApellido(), "Apellido");
         TextField txtCorreo    = campo(modoCrear ? "" : medicoActual.getEmail(),   "correo@ejemplo.com");
-        txtCorreo.setDisable(!modoCrear); // el correo no se edita
         TextField txtTelefono  = campo(modoCrear ? "" : medicoActual.getTelefono(), "Ej: 3001234567");
 
         ComboBox<CiudadModel> cmbCiudad = comboCiudades();
@@ -83,10 +105,11 @@ public class MedicoFormDialog {
         agregarFila(grid, fila++, "Documento",  txtDocumento);
         agregarFila(grid, fila++, "Nombre",     txtNombre);
         agregarFila(grid, fila++, "Apellido",   txtApellido);
-        if (modoCrear) agregarFila(grid, fila++, "Correo", txtCorreo);
-        agregarFila(grid, fila++, "Teléfono",   txtTelefono);
-        agregarFila(grid, fila++, "Ciudad",     cmbCiudad);
         agregarFila(grid, fila++, "Especialidad",        cmbEspecialidad);
+        agregarFila(grid, fila++, "Teléfono",   txtTelefono);
+        agregarFila(grid, fila++, "Correo", txtCorreo);
+        agregarFila(grid, fila++, "Ciudad",     cmbCiudad);
+
         grid.add(lblErrores, 0, fila, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
@@ -101,8 +124,16 @@ public class MedicoFormDialog {
         // Validación antes de cerrar
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String error = validar(modoCrear, txtDocumento, txtNombre, txtApellido,
-                    txtTelefono, txtCorreo,cmbCiudad, cmbEspecialidad);
+            String error = validar(
+                    modoCrear,
+                    txtDocumento,
+                    txtNombre,
+                    txtApellido,
+                    txtTelefono,
+                    txtCorreo,
+                    cmbCiudad,
+                    cmbEspecialidad
+            );
             if (error != null) {
                 lblErrores.setText(error);
                 lblErrores.setVisible(true);
@@ -122,11 +153,10 @@ public class MedicoFormDialog {
                         txtDocumento.getText().trim(),
                         txtNombre.getText().trim(),
                         txtApellido.getText().trim(),
-                        txtTelefono.getText().trim(),
                         txtCorreo.getText().trim(),
+                        txtTelefono.getText().trim(),
                         ciudad.getCodigo(),
                         espVal.getId()
-
                 );
             } else {
                 return new MedicoService.MedicoUpdateBody(
@@ -136,7 +166,6 @@ public class MedicoFormDialog {
                         txtTelefono.getText().trim(),
                         txtCorreo.getText().trim(),
                         ciudad.getCodigo()
-
                 );
             }
         });
@@ -154,31 +183,51 @@ public class MedicoFormDialog {
      * @param txtApellido campo apellido
      * @param txtTelefono campo teléfono
      * @param cmbCiudad combo de ciudades
-     * @param cmbEsp combo de EPS
+     * @param cmbEsp combo de Especialidad
      * @return mensaje de error o {@code null} si todo es válido
      */
     private String validar(boolean modoCrear,
-                           TextField txtDocumento, TextField txtNombre,
-                           TextField txtApellido,  TextField txtTelefono,
-                           TextField txtCorreo ,
-                           ComboBox<CiudadModel> cmbCiudad, ComboBox<EspecialidadModel> cmbEsp) {
+                           TextField txtDocumento,
+                           TextField txtNombre,
+                           TextField txtApellido,
+                           TextField txtTelefono,
+                           TextField txtCorreo,
+                           ComboBox<CiudadModel> cmbCiudad,
+                           ComboBox<EspecialidadModel> cmbEsp) {
         StringBuilder sb = new StringBuilder();
 
-        if (modoCrear && txtDocumento.getText().trim().isEmpty())
-            sb.append("• El documento es obligatorio.\n");
+        if (modoCrear && (
+                txtDocumento.getText().trim().isEmpty() ||
+                        !txtDocumento.getText().trim().matches("\\d{7,10}")
+        )) {
+            sb.append("• El documento debe contener solo números y tener entre 7 y 10 dígitos.\n");
+        }
 
-        if (txtNombre.getText().trim().isEmpty())
+        if (txtNombre.getText().trim().isEmpty()) {
             sb.append("• El nombre es obligatorio.\n");
 
+        } else if (!txtNombre.getText().trim().matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}")) {
+            sb.append("• El nombre debe tener mínimo 3 letras y no puede contener números ni símbolos.\n");
+        }
 
-        if (txtApellido.getText().trim().isEmpty())
+        if (txtApellido.getText().trim().isEmpty()) {
             sb.append("• El apellido es obligatorio.\n");
+        } else if (!txtApellido.getText().trim().matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]{3,}")) {
+            sb.append("• El apellido debe tener mínimo 3 letras y no puede contener números ni símbolos.\n");
+        }
 
-        if (txtTelefono.getText().trim().isEmpty())
+        if (txtTelefono.getText().trim().isEmpty()) {
             sb.append("• El teléfono es obligatorio.\n");
-        if(txtCorreo.getText().trim().isEmpty() || txtCorreo.getText().contains("@"))
-            sb.append("• El correo es obligatorio.\n");
-        else if (!txtTelefono.getText().trim().matches("\\d{7,15}"))
+        } else if (!txtTelefono.getText().trim().matches("\\d{7,15}")) {
+            sb.append("• El teléfono debe contener solo números y tener entre 7 y 15 dígitos.\n");
+        }
+
+        if (txtCorreo.getText().trim().isEmpty() ||
+                !txtCorreo.getText().trim().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            sb.append("• El correo no es válido.Recuerde el @ o .\n");
+        }
+
+        if (!txtTelefono.getText().trim().matches("\\d{7,15}"))
             sb.append("• El teléfono debe contener entre 7 y 15 dígitos.\n");
 
         if (cmbCiudad.getValue() == null)

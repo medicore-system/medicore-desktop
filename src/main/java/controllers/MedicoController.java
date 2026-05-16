@@ -11,7 +11,18 @@ import services.MedicoService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
+/**
+ * Controlador de médicos.
+ *
+ * Responsabilidades:
+ *   - Llamar al MedicoService dentro de Tasks (hilo secundario)
+ *   - Mantener el estado local: lista de médicos cargados
+ *   - Filtrar la lista sin volver a llamar al servidor
+ *   - Notificar a la vista mediante callbacks cuando los datos cambian
+ *
+ * La vista NO hace HTTP. Solo llama métodos de este controller
+ * y reacciona a los callbacks.
+ */
 public class MedicoController {
     private final MedicoService medicoService = MedicoService.getInstance();
     private final CiudadService ciudadService = CiudadService.getInstance();
@@ -30,10 +41,10 @@ public class MedicoController {
     private Consumer<String> onExito;
 
     /**
-     * Establece el callback que se ejecutará cuando los datos de usuarios
+     * Establece el callback que se ejecutará cuando los datos de médico
      * hayan sido actualizados correctamente.
      *
-     * @param cb función callback que recibe la lista actualizada de usuarios
+     * @param cb función callback que recibe la lista actualizada de médicos
      */
     public void setOnDatosActualizados(Consumer<List<MedicoModel>> cb) {
         this.onDatosActualizados = cb;
@@ -109,7 +120,7 @@ public class MedicoController {
      * Busca en documento, nombre, apellido, ciudad y eps.
      *
      * @param texto Texto ingresado en el buscador. Si es vacío, devuelve todos.
-     * @return Lista filtrada de usuarios.
+     * @return Lista filtrada de médicos.
      */
     public List<MedicoModel> filtrar(String texto) {
         if (texto == null || texto.isBlank()) return listaMedicos;
@@ -120,7 +131,9 @@ public class MedicoController {
                                 contiene(medico.getNombre(),    textoBuscador) ||
                                 contiene(medico.getApellido(),  textoBuscador) ||
                                 contiene(medico.getNombreEspecialidad(),    textoBuscador) ||
-                                contiene(medico.getNombreCiudad(),       textoBuscador))
+                                contiene(medico.getNombreCiudad(),       textoBuscador) ||
+                                contiene(medico.getNombre() + " " + medico.getApellido(), textoBuscador)
+                        )
                 .toList();
     }
 
@@ -151,6 +164,7 @@ public class MedicoController {
      * @param nombre    Nombre del medico (para el mensaje de éxito).
      */
     public void actualizar(String documento, MedicoService.MedicoUpdateBody body, String nombre) {
+        System.out.println(body);
         medicoService.actualizar(documento, body)
                 .thenAccept(u -> Platform.runLater(() -> {
                     if (onExito != null) onExito.accept("Medico '" + nombre + "' actualizado correctamente");
