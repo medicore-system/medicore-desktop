@@ -164,6 +164,16 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         }
     }
 
+    public CompletableFuture<String> delete(ID documento){
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/" + documento))
+                    .header("Content-Type", "application/json")
+                    .DELETE()
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body);
+    }
+
     /**
      * Valida la respuesta HTTP del servidor.
      *

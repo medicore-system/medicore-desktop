@@ -128,7 +128,9 @@ public class UsuarioController {
                     contiene(u.getNombre(),    t) ||
                     contiene(u.getApellido(),  t) ||
                     contiene(u.getCiudad(),    t) ||
-                    contiene(u.getEps(),       t))
+                    contiene(u.getEps(),       t) ||
+                    contiene(u.getNombre() +  " " + u.getApellido(), t)
+                )
                 .toList();
     }
 
