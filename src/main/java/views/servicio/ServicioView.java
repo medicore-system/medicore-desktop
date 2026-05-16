@@ -93,18 +93,21 @@ public class ServicioView extends VBox {
         tabla.setPlaceholder(new Label("No hay servicios que coincidan con la búsqueda."));
 
         // Código
-        TableColumn<ServicioModel, String> colCodigo = new TableColumn<>("Identificador");
+        TableColumn<ServicioModel, String> colCodigo = new TableColumn<>("Código");
         colCodigo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCodigo()));
+        colCodigo.setMinWidth(90);
         colCodigo.setMaxWidth(120);
-        colCodigo.setMinWidth(100);
 
         // Nombre
-        TableColumn<ServicioModel, String> colNombre = new TableColumn<>("Nombre del Servicio");
-        colNombre.setPrefWidth(200);
+        TableColumn<ServicioModel, String> colNombre = new TableColumn<>();
+        colNombre.setGraphic(headerDobleLinea("Nombre del", "Servicio"));
+        colNombre.setMinWidth(140);
+        colNombre.setPrefWidth(170);
         colNombre.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNombre()));
 
         // Descripción
         TableColumn<ServicioModel, String> colDesc = new TableColumn<>("Descripción");
+        colDesc.setMinWidth(120);
         colDesc.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getDescripcion() != null ? c.getValue().getDescripcion() : ""));
         colDesc.setCellFactory(col -> new TableCell<>() {
@@ -120,16 +123,20 @@ public class ServicioView extends VBox {
         // Tipo
         TableColumn<ServicioModel, String> colTipo = new TableColumn<>("Tipo");
         colTipo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTipo()));
-        colTipo.setMaxWidth(120);
+        colTipo.setMinWidth(90);
+        colTipo.setMaxWidth(130);
 
         // Precio
-        TableColumn<ServicioModel, String> colPrecio = new TableColumn<>("Precio (COP)");
+        TableColumn<ServicioModel, String> colPrecio = new TableColumn<>();
+        colPrecio.setGraphic(headerDobleLinea("Precio", "(COP)"));
         colPrecio.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getPrecio() != null ? PrecioFormato.formatear(c.getValue().getPrecio()) : "—"));
+        colPrecio.setMinWidth(90);
         colPrecio.setMaxWidth(120);
 
         // Estado con badge de color
         TableColumn<ServicioModel, String> colEstado = new TableColumn<>("Estado");
+        colEstado.setMinWidth(80);
         colEstado.setMaxWidth(100);
         colEstado.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getEstadoTexto()));
         colEstado.setCellFactory(col -> new TableCell<>() {
@@ -258,6 +265,20 @@ public class ServicioView extends VBox {
         Button btn = new Button(icono);
         btn.getStyleClass().addAll(clases);
         return btn;
+    }
+
+    /**
+     * Crea un Label de dos líneas para usar como header de columna.
+     *
+     * @param linea1 primera línea del texto
+     * @param linea2 segunda línea del texto
+     * @return Label centrado con dos líneas
+     */
+    private Label headerDobleLinea(String linea1, String linea2) {
+        Label lbl = new Label(linea1 + "\n" + linea2);
+        lbl.setWrapText(true);
+        lbl.setStyle("-fx-text-alignment: center; -fx-alignment: center;");
+        return lbl;
     }
 
     /**

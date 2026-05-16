@@ -1,473 +1,179 @@
 package views.ciudad;
 
+import controllers.CiudadController;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-
 import javafx.scene.layout.*;
+import models.CiudadModel;
+import services.CiudadService;
+import views.common.Toast;
 
-import models.Ciudad;
+import java.util.List;
 
-/*
- * Vista principal del módulo de ciudades.
- *
- * Aquí mostramos:
- * - encabezado
- * - buscador
- * - tabla de ciudades
- * - acciones
- * - botón nueva ciudad
+/**
+ * Vista principal para la gestión de ciudades.
+ * Delega toda la lógica al {@code CiudadController}.
  */
-
 public class CiudadView extends VBox {
 
-    // =========================
-    // COMPONENTES
-    // =========================
+    private final CiudadController controller = new CiudadController();
 
-    private Label titulo;
-
-    private Label subtitulo;
-
-    private TextField buscarCiudad;
-
-    private Button nuevaCiudad;
-
-    private TableView<Ciudad> tablaCiudades;
-
-    // Lista principal
-
-    private ObservableList<Ciudad> listaCiudades;
-
-    // Lista filtrada
-
-    private FilteredList<Ciudad> filtroCiudades;
-
-    /*
-     * Constructor principal.
-     */
+    private final Label titulo       = new Label("Gestión de Ciudades");
+    private final TextField buscador = new TextField();
+    private final Label lblContador  = new Label();
+    private final Button btnNuevo    = new Button("+ Nueva Ciudad");
+    private final TableView<CiudadModel> tabla = new TableView<>();
 
     public CiudadView() {
-
-        iniciarComponentes();
-
-        crearColumnas();
-
-        agregarDatosIniciales();
-
+        conectarController();
+        configurarComponentes();
+        configurarTabla();
         configurarLayout();
-
         registrarEventos();
-
         cargarEstilos();
+        controller.cargarCiudades();
     }
 
-    /*
-     * Inicializamos componentes.
-     */
+    private void conectarController() {
+        controller.setOnDatosActualizados(ciudades -> {
+            tabla.setItems(FXCollections.observableArrayList(ciudades));
+            tabla.refresh();
+            actualizarContador(ciudades.size(), ciudades.size());
+        });
+        controller.setOnError(mensaje ->
+                new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK).showAndWait());
+        controller.setOnExito(mensaje ->
+                Toast.success(this, mensaje));
+    }
 
-    private void iniciarComponentes() {
-
-        titulo = new Label("Gestion de Ciudades");
-
+    private void configurarComponentes() {
         titulo.getStyleClass().add("titulo");
-
-        subtitulo = new Label(
-                "Administración de ciudades de la red hospitalaria"
-        );
-
-        subtitulo.getStyleClass().add("subtitulo");
-
-        // Campo buscador
-
-        buscarCiudad = new TextField();
-
-        buscarCiudad.setPromptText(
-                "Buscar Ciudad"
-        );
-
-        buscarCiudad.getStyleClass()
-                .add("buscar");
-
-        // Botón nueva ciudad
-
-        nuevaCiudad = new Button(
-                "+ Nueva Ciudad"
-        );
-
-        nuevaCiudad.getStyleClass()
-                .add("btn-nueva");
-
-        // Tabla
-
-        tablaCiudades = new TableView<>();
-
-        tablaCiudades.getStyleClass()
-                .add("tabla");
-
-        tablaCiudades.setColumnResizePolicy(
-                TableView.CONSTRAINED_RESIZE_POLICY
-        );
-
-        // Inicializamos listas
-
-        listaCiudades =
-                FXCollections.observableArrayList();
-
-        filtroCiudades =
-                new FilteredList<>(
-                        listaCiudades,
-                        b -> true
-                );
+        buscador.setPromptText("🔍  Buscar ciudad...");
+        buscador.setId("buscador");
+        lblContador.getStyleClass().add("contador-resultados");
+        btnNuevo.setId("btnNuevaCiudad");
     }
 
-    /*
-     * Creamos las columnas de la tabla.
-     */
+    private void configurarTabla() {
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabla.setPlaceholder(new Label("No hay ciudades que coincidan con la búsqueda."));
 
-    private void crearColumnas() {
+        TableColumn<CiudadModel, String> colCodigo = new TableColumn<>("Código");
+        colCodigo.setCellValueFactory(c ->
+                new javafx.beans.property.SimpleStringProperty(c.getValue().getCodigo()));
+        colCodigo.setMaxWidth(120);
+        colCodigo.setMinWidth(90);
 
-        // Columna código
+        TableColumn<CiudadModel, String> colNombre = new TableColumn<>("Nombre");
+        colNombre.setCellValueFactory(c ->
+                new javafx.beans.property.SimpleStringProperty(c.getValue().getNombre()));
 
-        TableColumn<Ciudad, String> codigo =
-                new TableColumn<>("Codigo");
+        TableColumn<CiudadModel, String> colDepartamento = new TableColumn<>("Departamento");
+        colDepartamento.setCellValueFactory(c ->
+                new javafx.beans.property.SimpleStringProperty(c.getValue().getDepartamento()));
 
-        codigo.setCellValueFactory(
-                new PropertyValueFactory<>("codigo")
-        );
+        TableColumn<CiudadModel, String> colEstado = new TableColumn<>("Estado");
+        colEstado.setMaxWidth(110);
+        colEstado.setCellValueFactory(c ->
+                new javafx.beans.property.SimpleStringProperty(c.getValue().getStatus()));
+        colEstado.setCellFactory(col -> new TableCell<>() {
+            private final Label badge = new Label();
+            { badge.getStyleClass().add("badge-estado"); }
 
-        // Columna nombre
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) { setGraphic(null); return; }
+                badge.setText("ACTIVE".equalsIgnoreCase(item) ? "Activo" : "Inactivo");
+                badge.getStyleClass().removeAll("badge-activo", "badge-inactivo");
+                badge.getStyleClass().add("ACTIVE".equalsIgnoreCase(item) ? "badge-activo" : "badge-inactivo");
+                setGraphic(badge);
+                setText(null);
+            }
+        });
 
-        TableColumn<Ciudad, String> nombre =
-                new TableColumn<>("Nombre Ciudad");
+        TableColumn<CiudadModel, Void> colAcciones = new TableColumn<>("Acciones");
+        colAcciones.setMaxWidth(100);
+        colAcciones.setCellFactory(col -> new TableCell<>() {
+            private final Button btnEditar = btnIcono("✎", "btn-icono", "btn-editar");
+            private final HBox caja = new HBox(5, btnEditar);
+            {
+                caja.setAlignment(Pos.CENTER_LEFT);
+                btnEditar.setOnAction(e -> abrirDialogoEditar(
+                        getTableView().getItems().get(getIndex())));
+            }
 
-        nombre.setCellValueFactory(
-                new PropertyValueFactory<>("nombre")
-        );
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : caja);
+            }
+        });
 
-        // Columna departamento
-
-        TableColumn<Ciudad, String> departamento =
-                new TableColumn<>("Departamento");
-
-        departamento.setCellValueFactory(
-                new PropertyValueFactory<>("departamento")
-        );
-
-        // Columna país
-
-        TableColumn<Ciudad, String> pais =
-                new TableColumn<>("Pais");
-
-        pais.setCellValueFactory(
-                new PropertyValueFactory<>("pais")
-        );
-
-        // Columna hospitales
-
-        TableColumn<Ciudad, Integer> hospitales =
-                new TableColumn<>("Hospitales");
-
-        hospitales.setCellValueFactory(
-                new PropertyValueFactory<>("hospitales")
-        );
-
-        // Columna acciones
-
-        TableColumn<Ciudad, Void> acciones =
-                crearColumnaAcciones();
-
-        tablaCiudades.getColumns().addAll(
-                codigo,
-                nombre,
-                departamento,
-                pais,
-                hospitales,
-                acciones
-        );
-
-        // Ordenamiento
-
-        SortedList<Ciudad> sortedData =
-                new SortedList<>(filtroCiudades);
-
-        sortedData.comparatorProperty().bind(
-                tablaCiudades.comparatorProperty()
-        );
-
-        tablaCiudades.setItems(sortedData);
+        tabla.getColumns().addAll(colCodigo, colNombre, colDepartamento, colEstado, colAcciones);
     }
-
-    /*
-     * Creamos la columna de acciones.
-     */
-
-    private TableColumn<Ciudad, Void>
-    crearColumnaAcciones() {
-
-        TableColumn<Ciudad, Void> acciones =
-                new TableColumn<>("Acciones");
-
-        acciones.setCellFactory(columna ->
-                new TableCell<>() {
-
-                    private final Button editar =
-                            new Button("✎");
-
-                    {
-
-                        editar.getStyleClass()
-                                .add("btn-editar");
-
-                        editar.setOnAction(e -> {
-
-                            Ciudad ciudad =
-                                    getTableView()
-                                            .getItems()
-                                            .get(getIndex());
-
-                            // Abrimos ventana de acciones
-
-                            AccionCiudad modal =
-                                    new AccionCiudad(ciudad);
-
-                            modal.showAndWait();
-
-                            // Refrescamos tabla
-
-                            tablaCiudades.refresh();
-                        });
-                    }
-
-                    @Override
-                    protected void updateItem(
-                            Void item,
-                            boolean empty
-                    ) {
-
-                        super.updateItem(item, empty);
-
-                        if (empty) {
-
-                            setGraphic(null);
-
-                        } else {
-
-                            setGraphic(editar);
-                        }
-                    }
-                });
-
-        return acciones;
-    }
-
-    /*
-     * Datos iniciales de ejemplo.
-     */
-
-    private void agregarDatosIniciales() {
-
-        listaCiudades.add(
-                new Ciudad(
-                        "COL-001",
-                        "Medellin",
-                        "Antioquia",
-                        "Colombia",
-                        30
-                )
-        );
-
-        listaCiudades.add(
-                new Ciudad(
-                        "COL-002",
-                        "Bogota",
-                        "Cundinamarca",
-                        "Colombia",
-                        42
-                )
-        );
-    }
-
-    /*
-     * Organización visual de la pantalla.
-     */
 
     private void configurarLayout() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Encabezado
+        HBox barraTitulo = new HBox(titulo, spacer, btnNuevo);
+        barraTitulo.setAlignment(Pos.CENTER_LEFT);
 
-        VBox header = new VBox(
-                titulo,
-                subtitulo
-        );
+        HBox barraBusqueda = new HBox(12, buscador, lblContador);
+        barraBusqueda.setAlignment(Pos.CENTER_LEFT);
 
-        header.getStyleClass()
-                .add("header-superior");
-
-        header.setSpacing(5);
-
-        header.setPadding(
-                new Insets(20, 40, 20, 40)
-        );
-
-        // Barra superior
-
-        HBox barraSuperior = new HBox();
-
-        barraSuperior.setAlignment(
-                Pos.CENTER_LEFT
-        );
-
-        barraSuperior.setSpacing(20);
-
-        Region espacio = new Region();
-
-        HBox.setHgrow(
-                espacio,
-                Priority.ALWAYS
-        );
-
-        barraSuperior.getChildren().addAll(
-                buscarCiudad,
-                espacio,
-                nuevaCiudad
-        );
-
-        // Tabla
-
-        VBox contenedorTabla =
-                new VBox(tablaCiudades);
-
-        contenedorTabla.getStyleClass()
-                .add("contenedor-tabla");
-
-        // Contenido
-
-        VBox contenido = new VBox(
-                barraSuperior,
-                contenedorTabla
-        );
-
-        contenido.setSpacing(25);
-
-        contenido.setPadding(
-                new Insets(20)
-        );
-
-        // Agregamos todo
-
-        getChildren().addAll(
-                header,
-                contenido
-        );
+        setSpacing(15);
+        setPadding(new Insets(24));
+        getChildren().addAll(barraTitulo, barraBusqueda, tabla);
+        VBox.setVgrow(tabla, Priority.ALWAYS);
     }
-
-    /*
-     * Eventos principales.
-     */
 
     private void registrarEventos() {
-
-        registrarNuevaCiudad();
-
-        registrarBuscador();
-    }
-
-    /*
-     * Evento del botón nueva ciudad.
-     */
-
-    private void registrarNuevaCiudad() {
-
-        nuevaCiudad.setOnAction(e -> {
-
-            NuevaCiudad modal =
-                    new NuevaCiudad(listaCiudades);
-
-            modal.showAndWait();
+        buscador.textProperty().addListener((obs, ant, texto) -> {
+            List<CiudadModel> filtrados = controller.filtrar(texto);
+            tabla.setItems(FXCollections.observableArrayList(filtrados));
+            actualizarContador(filtrados.size(), controller.filtrar("").size());
         });
+        btnNuevo.setOnAction(e -> abrirDialogoCrear());
     }
 
-    /*
-     * Evento del buscador.
-     */
-
-    private void registrarBuscador() {
-
-        buscarCiudad.textProperty().addListener(
-                (observable, oldValue, newValue) -> {
-
-                    filtroCiudades.setPredicate(ciudad -> {
-
-                        // Si está vacío mostramos todo
-
-                        if (newValue == null
-                                || newValue.isEmpty()) {
-
-                            return true;
-                        }
-
-                        String texto =
-                                newValue.toLowerCase();
-
-                        // Buscar por nombre
-
-                        if (ciudad.getNombre()
-                                .toLowerCase()
-                                .contains(texto)) {
-
-                            return true;
-                        }
-
-                        // Buscar por código
-
-                        if (ciudad.getCodigo()
-                                .toLowerCase()
-                                .contains(texto)) {
-
-                            return true;
-                        }
-
-                        // Buscar por departamento
-
-                        if (ciudad.getDepartamento()
-                                .toLowerCase()
-                                .contains(texto)) {
-
-                            return true;
-                        }
-
-                        // Buscar por país
-
-                        return ciudad.getPais()
-                                .toLowerCase()
-                                .contains(texto);
-                    });
-                }
-        );
+    private void abrirDialogoCrear() {
+        new CiudadFormDialog(null, body -> {
+            CiudadService.CiudadCreateBody createBody = (CiudadService.CiudadCreateBody) body;
+            controller.crear(createBody);
+        }).show();
     }
 
-    /*
-     * Cargamos la hoja de estilos.
-     */
+    private void abrirDialogoEditar(CiudadModel ciudad) {
+        new CiudadFormDialog(ciudad, body -> {
+            CiudadService.CiudadUpdateBody updateBody = (CiudadService.CiudadUpdateBody) body;
+            controller.actualizar(ciudad.getCodigo(), updateBody);
+        }).show();
+    }
+
+    private void actualizarContador(int mostrados, int total) {
+        if (mostrados == total) {
+            lblContador.setText(total + (total == 1 ? " ciudad" : " ciudades"));
+        } else {
+            lblContador.setText(mostrados + " de " + total + " ciudades");
+        }
+    }
+
+    private Button btnIcono(String icono, String... clases) {
+        Button btn = new Button(icono);
+        btn.getStyleClass().addAll(clases);
+        return btn;
+    }
 
     private void cargarEstilos() {
-
         getStyleClass().add("ciudad-view");
-
-        getStylesheets().add(
-                getClass()
-                        .getResource(
-                                "/styles/ciudad/ciudad.css"
-                        )
-                        .toExternalForm()
-        );
+        try {
+            getStylesheets().add(
+                    getClass().getResource("/styles/ciudad/ciudad.css").toExternalForm());
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -10,26 +10,14 @@ package views.hospital;
  */
 public class CiudadHospitalModel {
 
-    /** Código único de la ciudad (ej. {@code BOG001}). */
-    public String codigo;
+    public String code;
+    public String name;
+    public String department;
+    public String status;
 
-    /** Nombre de la ciudad (ej. "Bogotá"). */
-    public String nombre;
-
-    /** Departamento al que pertenece la ciudad. */
-    public String departamento;
-
-    /** Cantidad de hospitales registrados en esta ciudad; puede ser {@code null}. */
-    public Long totalHospitales;
-
-    /**
-     * Representación legible para el combo de ciudades en los formularios.
-     *
-     * @return {@code "nombre (código)"}, o solo el código si {@code nombre} es nulo.
-     */
     @Override
     public String toString() {
-        if (nombre == null) return codigo == null ? "" : codigo;
-        return nombre + (codigo != null ? " (" + codigo + ")" : "");
+        if (name == null) return code == null ? "" : code;
+        return name + (code != null ? " (" + code + ")" : "");
     }
 }

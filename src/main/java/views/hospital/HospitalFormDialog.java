@@ -74,7 +74,7 @@ public class HospitalFormDialog {
         ComboBox<CiudadHospitalModel> cmbCiudad = comboCiudades();
         if (esEdicion) {
             ciudades.stream()
-                    .filter(c -> c.codigo != null && c.codigo.equals(hospitalExistente.codigoCiudad))
+                    .filter(c -> c.code != null && c.code.equals(hospitalExistente.codigoCiudad))
                     .findFirst()
                     .ifPresent(cmbCiudad::setValue);
         }
@@ -115,12 +115,12 @@ public class HospitalFormDialog {
             if (esEdicion) {
                 return new HospitalService.HospitalUpdateBody(
                         Validacion.texto(txtNombre), Validacion.texto(txtDireccion),
-                        Validacion.texto(txtTelefono), c.codigo, activo);
+                        Validacion.texto(txtTelefono), c.code, activo);
             } else {
                 return new HospitalService.HospitalCreateBody(
                         codigoGenerado, Validacion.texto(txtNombre),
                         Validacion.texto(txtDireccion), Validacion.texto(txtTelefono),
-                        c.codigo, activo);
+                        c.code, activo);
             }
         });
 
