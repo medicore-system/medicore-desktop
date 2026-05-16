@@ -43,6 +43,8 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         this.baseUrl = bu;
         this.client = HttpClient.newHttpClient();
         this.mapper = new ObjectMapper();
+        this.mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        this.mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     /**

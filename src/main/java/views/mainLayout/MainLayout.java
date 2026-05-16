@@ -79,6 +79,7 @@ public class MainLayout extends BorderPane {
     }
 
     private void mostrarUsuarios(){
-        setCenter(new UsuarioView(codigo ->setCenter(new CitasUsuarioView())));
+        setCenter(new UsuarioView(codigo ->
+                setCenter(new CitasUsuarioView(codigo, this::mostrarUsuarios))));
     }
 }

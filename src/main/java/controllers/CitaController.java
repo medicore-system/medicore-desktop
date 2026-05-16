@@ -24,6 +24,8 @@ public class CitaController {
     /** Se dispara cuando una operación (crear/actualizar/toggle) termina bien. */
     private Consumer<String> onExito;
 
+    private String documentoPaciente;
+
     /**
      * Establece el callback que se ejecutará cuando los datos de usuarios
      * hayan sido actualizados correctamente.
@@ -59,11 +61,13 @@ public class CitaController {
      * Al terminar notifica a la vista via onDatosActualizados.
      */
     public void cargarCitas(String documento) {
+        this.documentoPaciente = documento;
         service.getCitasPaciente(documento).thenAccept(citas -> Platform.runLater(() -> {
             todos = new ArrayList<>(citas);
             if(onDatosActualizados != null) onDatosActualizados.accept(todos);
         })).exceptionally(e -> {
-            Platform.runLater(() -> notificarError("No se puede cargar los usuarios.\n" + "Verifica que el servidor este corriendo en localhost:8080"));
+            System.out.println(e.getMessage());
+            Platform.runLater(() -> notificarError("No se puede cargar las citas.\n" + "Verifica que el servidor este corriendo en localhost:8080"));
             return null;
         });
     }
@@ -96,6 +100,7 @@ public class CitaController {
     public void aprobar(String codigo) {
         service.aprobar(codigo).thenAccept(u-> Platform.runLater(() -> {
             if (onExito != null) onExito.accept("cita '" + codigo + "' aprobada exitosamete");
+            cargarCitas(documentoPaciente);
         }))
         .exceptionally(e -> {
             Platform.runLater(() -> notificarError("Error al aprobar la cita"));
@@ -111,6 +116,7 @@ public class CitaController {
     public void denegar(String codigo) {
         service.denegar(codigo).thenAccept(u-> Platform.runLater(() -> {
                     if (onExito != null) onExito.accept("cita '" + codigo + "' denegada exitosamete");
+                    cargarCitas(documentoPaciente);
                 }))
                 .exceptionally(e -> {
                     Platform.runLater(() -> notificarError("Error al aprobar la cita"));
