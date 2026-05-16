@@ -9,14 +9,15 @@ package views.hospital;
  * en su propio módulo. Refleja el JSON de {@code GET /cities} del backend.</p>
  */
 public class CiudadHospitalModel {
-    public String codigo;
-    public String nombre;
-    public String departamento;
-    public Long totalHospitales;
+
+    public String code;
+    public String name;
+    public String department;
+    public String status;
 
     @Override
     public String toString() {
-        if (nombre == null) return codigo == null ? "" : codigo;
-        return nombre + (codigo != null ? " (" + codigo + ")" : "");
+        if (name == null) return code == null ? "" : code;
+        return name + (code != null ? " (" + code + ")" : "");
     }
 }

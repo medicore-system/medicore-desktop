@@ -1,71 +1,90 @@
 package services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import models.CiudadModel;
 import services.http.HttpServiceImpl;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Servicio encargado de gestionar las operaciones HTTP
- * relacionadas con las ciudades.
- *
- * <p>
- * Implementa el patrón Singleton para mantener una única
- * instancia compartida en toda la aplicación.
- * </p>
+ * Servicio HTTP para ciudades.
+ * Endpoint base: GET/POST /cities  |  GET/PUT/DELETE /cities/{id}
  */
 public class CiudadService extends HttpServiceImpl<Object, String> {
 
-    /**
-     * URL base de la API.
-     */
     private static final String BASE_URL = "http://localhost:8080/cities";
 
-    /**
-     * Instancia única del servicio.
-     */
     private static CiudadService instance;
 
-    /**
-     * Constructor privado para evitar instanciación externa.
-     */
-    private CiudadService() {
-        super(BASE_URL);
-    }
+    private CiudadService() { super(BASE_URL); }
 
-    /**
-     * Obtiene la instancia única del servicio.
-     *
-     * @return instancia singleton de {@code CiudadService}
-     */
     public static CiudadService getInstance() {
         if (instance == null) instance = new CiudadService();
         return instance;
     }
 
-    /**
-     * Obtiene todas las ciudades registradas en el sistema.
-     *
-     * @return lista de ciudades obtenidas desde el backend
-     * @throws Exception si ocurre un error durante la petición
-     *                   o el servidor responde con error HTTP
-     */
+    /** GET /cities — devuelve la lista completa de ciudades. */
     public CompletableFuture<List<CiudadModel>> getAllCiudades() {
         return getAll().thenApply(json -> {
-            try{
+            System.out.println("[CiudadService] GET /cities respuesta: " + json);
+            try {
                 return mapper.readValue(json, new TypeReference<List<CiudadModel>>() {});
-            }catch (Exception ex){
-                throw new RuntimeException("Error parseando ciudades" + ex.getMessage(), ex);
-
+            } catch (Exception ex) {
+                System.err.println("[CiudadService] Error parseando: " + ex.getMessage());
+                throw new RuntimeException("Error parseando ciudades: " + ex.getMessage(), ex);
             }
         });
     }
+
+    /**
+     * POST /cities — registra una nueva ciudad.
+     * El backend genera el código automáticamente.
+     */
+    public CompletableFuture<CiudadModel> crear(CiudadCreateBody body) {
+        return post(body).thenApply(json -> {
+            System.out.println("[CiudadService] POST /cities respuesta: " + json);
+            try {
+                return mapper.readValue(json, CiudadModel.class);
+            } catch (Exception e) {
+                System.err.println("[CiudadService] Error parseando crear: " + e.getMessage());
+                throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * PUT /cities/{code} — actualiza los datos de una ciudad.
+     */
+    public CompletableFuture<CiudadModel> actualizar(String codigo, CiudadUpdateBody body) {
+        return put(codigo, body).thenApply(json -> {
+            System.out.println("[CiudadService] PUT /cities/" + codigo + " respuesta: " + json);
+            try {
+                return mapper.readValue(json, CiudadModel.class);
+            } catch (Exception e) {
+                System.err.println("[CiudadService] Error parseando actualizar: " + e.getMessage());
+                throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Cuerpo POST /cities.
+     * Campos: name, department, status ("ACTIVE" | "INACTIVE").
+     */
+    public record CiudadCreateBody(
+            String name,
+            String department,
+            String status
+    ) {}
+
+    /**
+     * Cuerpo PUT /cities/{id}.
+     * Campos: name, department, status ("ACTIVE" | "INACTIVE").
+     */
+    public record CiudadUpdateBody(
+            String name,
+            String department,
+            String status
+    ) {}
 }

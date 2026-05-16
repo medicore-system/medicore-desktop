@@ -43,6 +43,8 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         this.baseUrl = bu;
         this.client = HttpClient.newHttpClient();
         this.mapper = new ObjectMapper();
+        this.mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        this.mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     /**
@@ -58,7 +60,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+                .thenApply(resp -> {
+                    if (resp.statusCode() >= 400)
+                        throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                    return resp.body();
+                });
     }
 
     /**
@@ -75,7 +81,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+                .thenApply(resp -> {
+                    if (resp.statusCode() >= 400)
+                        throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                    return resp.body();
+                });
     }
 
     /**
@@ -94,7 +104,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+                    .thenApply(resp -> {
+                        if (resp.statusCode() >= 400)
+                            throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                        return resp.body();
+                    });
         }catch(Exception e){
             return CompletableFuture.failedFuture(e);
         }
@@ -117,7 +131,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                     .PUT(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+                    .thenApply(resp -> {
+                        if (resp.statusCode() >= 400)
+                            throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                        return resp.body();
+                    });
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
@@ -144,6 +162,16 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         }catch (Exception e){
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    public CompletableFuture<String> delete(ID documento){
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/" + documento))
+                    .header("Content-Type", "application/json")
+                    .DELETE()
+                    .build();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body);
     }
 
     /**

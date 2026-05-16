@@ -1,60 +1,31 @@
-package views.usuario;
+package views.medico;
 
-import javafx.geometry.Insets;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import models.CiudadModel;
-import models.EpsModel;
-import models.UsuarioModel;
-import services.UsuarioService;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import models.*;
+import services.MedicoService;
+
 import java.util.List;
 import java.util.function.Consumer;
-
 /**
- * Diálogo reutilizable para la creación y edición de usuarios.
+ * Diálogo encargado de crear o editar médicos dentro del sistema.
  *
- * <p>
- * Esta clase encapsula toda la construcción de la interfaz,
- * validaciones y generación de los cuerpos de petición
- * necesarios para consumir el backend.
- * </p>
- *
- * <h2>Modo creación</h2>
- * <pre>
- * new UsuarioFormDialog(
- *     null,
- *     ciudades,
- *     eps,
- *     body -> controller.crear(body)
- * ).show();
- * </pre>
- *
- * <h2>Modo edición</h2>
- * <pre>
- * new UsuarioFormDialog(
- *     usuario,
- *     ciudades,
- *     eps,
- *     body -> controller.actualizar(body)
- * ).show();
- * </pre>
- *
- * <p>
- * El diálogo no conoce el controlador ni el servicio.
- * Únicamente entrega el resultado mediante un callback.
- * </p>
+ * Permite diligenciar la información básica del médico,
+ * validar los datos ingresados y enviar el resultado
+ * mediante un callback de confirmación.
  */
-public class UsuarioFormDialog {
+public class MedicoFormDialog {
 
     /**
-     * Usuario actualmente editado.
-     *
-     * <p>
-     * Si es {@code null}, el diálogo trabaja en modo creación.
-     * </p>
+     * Médico actual a editar.
+     * Si es null, el formulario se encuentra en modo creación.
      */
-    private final UsuarioModel usuarioActual; // null = modo crear
+    private final MedicoModel medicoActual;
 
     /**
      * Lista de ciudades disponibles.
@@ -62,40 +33,33 @@ public class UsuarioFormDialog {
     private final List<CiudadModel> ciudades;
 
     /**
-     * Lista de EPS disponibles.
+     * Lista de especialidades disponibles.
      */
-    private final List<EpsModel> eps;
+    private final List<EspecialidadModel> especialidades;
 
     /**
      * Callback ejecutado al confirmar el formulario.
-     *
-     * <p>
-     * Recibe un:
-     * </p>
-     * <ul>
-     *     <li>{@code UsuarioCreateBody}</li>
-     *     <li>{@code UsuarioUpdateBody}</li>
-     * </ul>
      */
-    private final Consumer<Object> onConfirmar; // recibe CreateBody o UpdateBody
+    private final Consumer<Object> onConfirmar;
 
     /**
      * Constructor del diálogo.
      *
-     * @param usuarioActual usuario actual o {@code null} para crear
+     * @param medicoActual usuario actual o {@code null} para crear
      * @param ciudades lista de ciudades disponibles
-     * @param eps lista de EPS disponibles
+     * @param especialidades lista de EPS disponibles
      * @param onConfirmar callback ejecutado al confirmar
      */
-    public UsuarioFormDialog(UsuarioModel usuarioActual,
+    public MedicoFormDialog(MedicoModel medicoActual,
                              List<CiudadModel> ciudades,
-                             List<EpsModel> eps,
+                             List<EspecialidadModel> especialidades,
                              Consumer<Object> onConfirmar) {
-        this.usuarioActual = usuarioActual;
-        this.ciudades      = ciudades;
-        this.eps           = eps;
+        this.medicoActual   = medicoActual;
+        this.ciudades       = ciudades;
+        this.especialidades = especialidades;
         this.onConfirmar   = onConfirmar;
     }
+
 
     /**
      * Construye y muestra el diálogo.
@@ -106,29 +70,28 @@ public class UsuarioFormDialog {
      * </p>
      */
     public void show() {
-        boolean modoCrear = (usuarioActual == null);
+        boolean modoCrear = (medicoActual == null);
 
         Dialog<Object> dialog = new Dialog<>();
-        dialog.setTitle(modoCrear ? "Nuevo Usuario" : "Editar Usuario");
+        dialog.setTitle(modoCrear ? "Nuevo Médico" : "Editar Médico");
         dialog.setHeaderText(modoCrear
-                ? "Registrar un nuevo usuario"
-                : "Editando: " + usuarioActual.GetNombreCompleto());
+                ? "Registrar un nuevo médico"
+                : "Editando: " + medicoActual.getNombre()+ " " + medicoActual.getApellido());
 
         // ── Campos ──────────────────────────────────────────────────────
-        TextField txtDocumento = campo(modoCrear ? "" : usuarioActual.getDocumento(), "Ej: 1234567890");
+        TextField txtDocumento = campo(modoCrear ? "" : medicoActual.getDocumento(), "Ej: 1234567890");
         txtDocumento.setDisable(!modoCrear); // el documento no se puede cambiar al editar
 
-        TextField txtNombre    = campo(modoCrear ? "" : usuarioActual.getNombre(),   "Nombre");
-        TextField txtApellido  = campo(modoCrear ? "" : usuarioActual.getApellido(), "Apellido");
-        TextField txtCorreo    = campo(modoCrear ? "" : usuarioActual.getCorreo(),   "correo@ejemplo.com");
-        txtCorreo.setDisable(!modoCrear); // el correo no se edita
-        TextField txtTelefono  = campo(modoCrear ? "" : usuarioActual.getTelefono(), "Ej: 3001234567");
+        TextField txtNombre    = campo(modoCrear ? "" : medicoActual.getNombre(),   "Nombre");
+        TextField txtApellido  = campo(modoCrear ? "" : medicoActual.getApellido(), "Apellido");
+        TextField txtCorreo    = campo(modoCrear ? "" : medicoActual.getEmail(),   "correo@ejemplo.com");
+        TextField txtTelefono  = campo(modoCrear ? "" : medicoActual.getTelefono(), "Ej: 3001234567");
 
         ComboBox<CiudadModel> cmbCiudad = comboCiudades();
-        if (!modoCrear) preseleccionarCiudad(cmbCiudad, usuarioActual.getCiudad());
+        if (!modoCrear) preseleccionarCiudad(cmbCiudad, medicoActual.getNombreCiudad());
 
-        ComboBox<EpsModel> cmbEps = comboEps();
-        if (!modoCrear) preseleccionarEps(cmbEps, usuarioActual.getEps());
+        ComboBox<EspecialidadModel> cmbEspecialidad = comboEspecialidad();
+        if (!modoCrear) preseleccionarEspecialidad(cmbEspecialidad, medicoActual.getNombreEspecialidad());
 
         Label lblErrores = new Label();
         lblErrores.setStyle("-fx-text-fill: #e53e3e; -fx-font-size: 12px;");
@@ -142,10 +105,11 @@ public class UsuarioFormDialog {
         agregarFila(grid, fila++, "Documento",  txtDocumento);
         agregarFila(grid, fila++, "Nombre",     txtNombre);
         agregarFila(grid, fila++, "Apellido",   txtApellido);
-        if (modoCrear) agregarFila(grid, fila++, "Correo", txtCorreo);
+        agregarFila(grid, fila++, "Especialidad",        cmbEspecialidad);
         agregarFila(grid, fila++, "Teléfono",   txtTelefono);
+        agregarFila(grid, fila++, "Correo", txtCorreo);
         agregarFila(grid, fila++, "Ciudad",     cmbCiudad);
-        agregarFila(grid, fila++, "EPS",        cmbEps);
+
         grid.add(lblErrores, 0, fila, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
@@ -153,15 +117,23 @@ public class UsuarioFormDialog {
         dialog.getDialogPane().getStyleClass().add("dialogo-paciente");
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK))
-                .setText(modoCrear ? "Crear usuario" : "Guardar cambios");
+                .setText(modoCrear ? "Crear médico" : "Guardar cambios");
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL))
                 .setText("Cancelar");
 
         // Validación antes de cerrar
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String error = validar(modoCrear, txtDocumento, txtNombre, txtApellido,
-                    txtTelefono, cmbCiudad, cmbEps);
+            String error = validar(
+                    modoCrear,
+                    txtDocumento,
+                    txtNombre,
+                    txtApellido,
+                    txtTelefono,
+                    txtCorreo,
+                    cmbCiudad,
+                    cmbEspecialidad
+            );
             if (error != null) {
                 lblErrores.setText(error);
                 lblErrores.setVisible(true);
@@ -174,24 +146,25 @@ public class UsuarioFormDialog {
         dialog.setResultConverter(btn -> {
             if (btn != ButtonType.OK) return null;
             CiudadModel ciudad = cmbCiudad.getValue();
-            EpsModel    epsVal = cmbEps.getValue();
+            EspecialidadModel    espVal = cmbEspecialidad.getValue();
 
             if (modoCrear) {
-                return new UsuarioService.UsuarioCreateBody(
+                return new MedicoService.MedicoCreateBody(
                         txtDocumento.getText().trim(),
                         txtNombre.getText().trim(),
                         txtApellido.getText().trim(),
                         txtCorreo.getText().trim(),
                         txtTelefono.getText().trim(),
-                        epsVal.getCodigo(),
-                        ciudad.getCodigo()
+                        ciudad.getCodigo(),
+                        espVal.getId()
                 );
             } else {
-                return new UsuarioService.UsuarioUpdateBody(
+                return new MedicoService.MedicoUpdateBody(
                         txtNombre.getText().trim(),
                         txtApellido.getText().trim(),
+                        espVal.getId(),
                         txtTelefono.getText().trim(),
-                        epsVal.getCodigo(),
+                        txtCorreo.getText().trim(),
                         ciudad.getCodigo()
                 );
             }
@@ -210,13 +183,17 @@ public class UsuarioFormDialog {
      * @param txtApellido campo apellido
      * @param txtTelefono campo teléfono
      * @param cmbCiudad combo de ciudades
-     * @param cmbEps combo de EPS
+     * @param cmbEsp combo de Especialidad
      * @return mensaje de error o {@code null} si todo es válido
      */
     private String validar(boolean modoCrear,
-                           TextField txtDocumento, TextField txtNombre,
-                           TextField txtApellido,  TextField txtTelefono,
-                           ComboBox<CiudadModel> cmbCiudad, ComboBox<EpsModel> cmbEps) {
+                           TextField txtDocumento,
+                           TextField txtNombre,
+                           TextField txtApellido,
+                           TextField txtTelefono,
+                           TextField txtCorreo,
+                           ComboBox<CiudadModel> cmbCiudad,
+                           ComboBox<EspecialidadModel> cmbEsp) {
         StringBuilder sb = new StringBuilder();
 
         if (modoCrear && (
@@ -245,11 +222,19 @@ public class UsuarioFormDialog {
             sb.append("• El teléfono debe contener solo números y tener entre 7 y 15 dígitos.\n");
         }
 
+        if (txtCorreo.getText().trim().isEmpty() ||
+                !txtCorreo.getText().trim().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            sb.append("• El correo no es válido.Recuerde el @ o .\n");
+        }
+
+        if (!txtTelefono.getText().trim().matches("\\d{7,15}"))
+            sb.append("• El teléfono debe contener entre 7 y 15 dígitos.\n");
+
         if (cmbCiudad.getValue() == null)
             sb.append("• Debes seleccionar una ciudad.\n");
 
-        if (cmbEps.getValue() == null)
-            sb.append("• Debes seleccionar una EPS.\n");
+        if (cmbEsp.getValue() == null)
+            sb.append("• Debes seleccionar una especialidad.\n");
 
         return sb.length() == 0 ? null : sb.toString().trim();
     }
@@ -283,19 +268,18 @@ public class UsuarioFormDialog {
     }
 
     /**
-     * Crea el combo de EPS.
+     * Crea el combo de Especialidades.
      *
      * @return combo configurado
      */
-    private ComboBox<EpsModel> comboEps() {
-        ComboBox<EpsModel> cmb = new ComboBox<>();
+    private ComboBox<EspecialidadModel> comboEspecialidad() {
+        ComboBox<EspecialidadModel> cmb = new ComboBox<>();
         cmb.setMaxWidth(Double.MAX_VALUE);
         cmb.setPrefHeight(34);
-        cmb.setPromptText("Selecciona una EPS");
-        cmb.getItems().setAll(eps);
+        cmb.setPromptText("Selecciona una especialidad");
+        cmb.getItems().setAll(especialidades);
         return cmb;
     }
-
     /**
      * Preselecciona una ciudad dentro del combo.
      *
@@ -310,14 +294,14 @@ public class UsuarioFormDialog {
     }
 
     /**
-     * Preselecciona una EPS dentro del combo.
+     * Preselecciona una especilidad dentro del combo.
      *
-     * @param cmb combo de EPS
-     * @param nombreEps nombre de la EPS
+     * @param cmb combo de Especilidad
+     * @param nombreEspecilidad nombre de la EPS
      */
-    private void preseleccionarEps(ComboBox<EpsModel> cmb, String nombreEps) {
+    private void preseleccionarEspecialidad(ComboBox<EspecialidadModel> cmb, String nombreEspecilidad) {
         cmb.getItems().stream()
-                .filter(e -> e.getNombre() != null && e.getNombre().equals(nombreEps))
+                .filter(e -> e.getNombre() != null && e.getNombre().equals(nombreEspecilidad))
                 .findFirst()
                 .ifPresent(cmb::setValue);
     }
