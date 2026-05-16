@@ -1,105 +1,47 @@
 package models;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Modelo que representa una ciudad dentro del sistema.
- * Contiene información básica como código, nombre,
- * departamento y cantidad de hospitales asociados.
+ * Los campos usan @JsonProperty para mapear los nombres en inglés
+ * que devuelve la API REST al estilo Java en español.
  */
 public class CiudadModel {
-    /**
-     * Código único de la ciudad.
-     */
+
+    @JsonProperty("code")
     private String codigo;
-    /**
-     * Nombre de la ciudad.
-     */
+
+    @JsonProperty("name")
     private String nombre;
-    /**
-     * Departamento al cual pertenece la ciudad.
-     */
+
+    @JsonProperty("department")
     private String departamento;
 
-    /**
-     * Cantidad de hospitales en la ciudad.
-     */
+    @JsonProperty("status")
+    private String status;
+
     private Long totalHospitales;
 
-    /**
-     * Obtiene la cantidad de hospitales registrados en la ciudad.
-     *
-     * @return cantidad de hospitales
-     */
-    public Long getTotalHospitales() {
-        return totalHospitales;
+    public String getCodigo()       { return codigo; }
+    public void setCodigo(String v) { this.codigo = v; }
+
+    public String getNombre()       { return nombre; }
+    public void setNombre(String v) { this.nombre = v; }
+
+    public String getDepartamento()       { return departamento; }
+    public void setDepartamento(String v) { this.departamento = v; }
+
+    public String getStatus()       { return status; }
+    public void setStatus(String v) { this.status = v; }
+
+    public Long getTotalHospitales()       { return totalHospitales; }
+    public void setTotalHospitales(Long v) { this.totalHospitales = v; }
+
+    public boolean isActivo() {
+        return "ACTIVE".equalsIgnoreCase(status);
     }
 
-    /**
-     * Define la cantidad de hospitales registrados en la ciudad.
-     *
-     * @param cantHospitales cantidad de hospitales
-     */
-    public void setTotalHospitales(Long cantHospitales) {
-        this.totalHospitales = cantHospitales;
-    }
-
-    /**
-     * Obtiene el código de la ciudad.
-     *
-     * @return código de la ciudad
-     */
-    public String getCodigo() {
-        return codigo;
-    }
-
-    /**
-     * Define el código de la ciudad.
-     *
-     * @param codigo codigo de la ciudad
-     */
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
-
-    /**
-     * Obtiene el nombre de la ciudad.
-     *
-     * @return nombre de la ciudad
-     */
-    public String getNombre() {
-        return nombre;
-    }
-
-    /**
-     * Define el nombre de la ciudad.
-     *
-     * @param nombre nombre de la ciudad
-     */
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    /**
-     * Obtiene el departamento de la ciudad.
-     *
-     * @return departamento de la ciudad
-     */
-    public String getDepartamento() {
-        return departamento;
-    }
-
-    /**
-     * Denine el departamento de la ciudad.
-     *
-     * @param departamento departamento de la ciudad
-     */
-    public void setDepartamento(String departamento) {
-        this.departamento = departamento;
-    }
-
-    /**
-     * Retorna el nombre de la ciudad como representación textual.
-     *
-     * @return nombre de la ciudad
-     */
     @Override
     public String toString() {
         return nombre;

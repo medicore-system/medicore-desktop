@@ -60,7 +60,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+                .thenApply(resp -> {
+                    if (resp.statusCode() >= 400)
+                        throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                    return resp.body();
+                });
     }
 
     /**
@@ -77,7 +81,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+                .thenApply(resp -> {
+                    if (resp.statusCode() >= 400)
+                        throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                    return resp.body();
+                });
     }
 
     /**
@@ -96,7 +104,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+                    .thenApply(resp -> {
+                        if (resp.statusCode() >= 400)
+                            throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                        return resp.body();
+                    });
         }catch(Exception e){
             return CompletableFuture.failedFuture(e);
         }
@@ -119,7 +131,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                     .PUT(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+                    .thenApply(resp -> {
+                        if (resp.statusCode() >= 400)
+                            throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                        return resp.body();
+                    });
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
