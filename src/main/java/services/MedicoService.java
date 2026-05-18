@@ -61,6 +61,21 @@ public class MedicoService extends HttpServiceImpl<Object, String> {
     }
 
     /**
+     * Obtiene la lista de todos los médicos registrados que esten activos.
+     *
+     * @return CompletableFuture con la lista de médicos
+     */
+    public CompletableFuture<List<MedicoModel>> getAllMedicosActivos() {
+        return getAllCustom("/activos").thenApply(json -> {
+            try{
+                return mapper.readValue(json, new TypeReference<List<MedicoModel>>() {});
+            }catch (Exception e){
+                throw new RuntimeException("Error Parseando Medicos: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Obtiene un médico a partir de su documento.
      *
      * @param documento documento del médico a consultar

@@ -24,6 +24,14 @@ public interface IHttpService <T, ID>{
     CompletableFuture<String> getAll();
 
     /**
+     * Obtiene todos los recursos disponibles segun el path.
+     *
+     * @return un {@link CompletableFuture} con la respuesta
+     *         del servidor en formato JSON
+     */
+    CompletableFuture<String> getAllCustom(String path);
+
+    /**
      * Obtiene un recurso específico mediante su identificador.
      *
      * @param id identificador del recurso

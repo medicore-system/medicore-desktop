@@ -108,4 +108,9 @@ public final class Validacion {
         }
         return null;
     }
+
+    // Agregar en Validacion.java
+    public static boolean estaVacio(String valor) {
+        return valor == null || valor.trim().isEmpty();
+    }
 }
