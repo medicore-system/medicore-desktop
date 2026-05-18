@@ -1,8 +1,10 @@
 package views.hospital;
 
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import models.CiudadModel;
 import models.HospitalModel;
 import services.HospitalService;
 import views.common.Validacion;
@@ -14,8 +16,12 @@ import java.util.function.Supplier;
 /**
  * Diálogo reutilizable para crear y editar hospitales.
  *
- * Si se pasa un {@code HospitalModel} existente, opera en modo edición.
- * Si se pasa {@code null}, opera en modo creación (muestra el campo Código).
+ * <p>Si se pasa un {@code HospitalModel} existente, opera en modo edición.
+ * Si se pasa {@code null}, opera en modo creación y genera el código
+ * automáticamente mediante el {@code Supplier} indicado.</p>
+ *
+ * @author Juan Sebastián López Guzmán
+ * @author Cristian Camilo Salazar Arenas
  */
 public class HospitalFormDialog {
 
@@ -23,7 +29,7 @@ public class HospitalFormDialog {
     private final HospitalModel hospitalExistente;
 
     /** Lista de ciudades disponibles para poblar el combo del formulario. */
-    private final List<CiudadHospitalModel> ciudades;
+    private final List<CiudadModel> ciudades;
 
     /** Callback invocado con el body resultante al pulsar "OK". */
     private final Consumer<Object> onGuardar;
@@ -34,17 +40,17 @@ public class HospitalFormDialog {
     /**
      * Crea el diálogo vinculado a un hospital existente (edición) o en blanco (creación).
      *
-     * @param hospitalExistente Hospital a editar, o {@code null} para crear uno nuevo.
-     * @param ciudades          Lista de ciudades disponibles para el combo.
+     * @param hospitalExistente Hospital a editar, o {@code null} para crear uno nuevo
+     * @param ciudades          Lista de ciudades disponibles para el combo
      * @param onGuardar         Callback que recibe {@link services.HospitalService.HospitalCreateBody}
-     *                          o {@link services.HospitalService.HospitalUpdateBody} al confirmar.
-     * @param generarCodigo     Supplier que devuelve el siguiente código disponible en modo creación;
-     *                          {@code null} en modo edición.
+     *                          o {@link services.HospitalService.HospitalUpdateBody} al confirmar
+     * @param generarCodigo     Supplier que devuelve el siguiente código disponible
+     *                          en modo creación; {@code null} en modo edición
      */
     public HospitalFormDialog(HospitalModel hospitalExistente,
-                               List<CiudadHospitalModel> ciudades,
-                               Consumer<Object> onGuardar,
-                               Supplier<String> generarCodigo) {
+                              List<CiudadModel> ciudades,
+                              Consumer<Object> onGuardar,
+                              Supplier<String> generarCodigo) {
         this.hospitalExistente = hospitalExistente;
         this.ciudades          = ciudades;
         this.onGuardar         = onGuardar;
@@ -71,13 +77,8 @@ public class HospitalFormDialog {
         TextField txtDireccion = campoTexto(esEdicion ? hospitalExistente.direccion : "", "Dirección física");
         TextField txtTelefono  = campoTexto(esEdicion ? hospitalExistente.telefono  : "", "Ej: (601) 000-0000");
 
-        ComboBox<CiudadHospitalModel> cmbCiudad = comboCiudades();
-        if (esEdicion) {
-            ciudades.stream()
-                    .filter(c -> c.code != null && c.code.equals(hospitalExistente.codigoCiudad))
-                    .findFirst()
-                    .ifPresent(cmbCiudad::setValue);
-        }
+        ComboBox<CiudadModel> cmbCiudad = comboCiudades();
+        if (esEdicion) preseleccionarCiudad(cmbCiudad, hospitalExistente.codigoCiudad);
 
         String estadoInicial = esEdicion
                 ? (Boolean.TRUE.equals(hospitalExistente.estado) ? "Activo" : "Inactivo")
@@ -110,18 +111,17 @@ public class HospitalFormDialog {
 
         dialog.setResultConverter(btn -> {
             if (btn != ButtonType.OK) return null;
-            CiudadHospitalModel c = cmbCiudad.getValue();
+            CiudadModel ciudad = cmbCiudad.getValue();
             boolean activo = "Activo".equals(cmbEstado.getValue());
             if (esEdicion) {
                 return new HospitalService.HospitalUpdateBody(
                         Validacion.texto(txtNombre), Validacion.texto(txtDireccion),
-                        Validacion.texto(txtTelefono), c.code, activo);
-            } else {
-                return new HospitalService.HospitalCreateBody(
-                        codigoGenerado, Validacion.texto(txtNombre),
-                        Validacion.texto(txtDireccion), Validacion.texto(txtTelefono),
-                        c.code, activo);
+                        Validacion.texto(txtTelefono), ciudad.getCodigo(), activo);
             }
+            return new HospitalService.HospitalCreateBody(
+                    codigoGenerado, Validacion.texto(txtNombre),
+                    Validacion.texto(txtDireccion), Validacion.texto(txtTelefono),
+                    ciudad.getCodigo(), activo);
         });
 
         cargarEstilos(dialog);
@@ -131,12 +131,12 @@ public class HospitalFormDialog {
     /**
      * Valida todos los campos del formulario.
      *
-     * @return Cadena con todos los errores encontrados, o {@code null} si todo es válido.
+     * @return Cadena con todos los errores encontrados, o {@code null} si todo es válido
      */
     private String validarCamposComunes(TextField txtNombre, TextField txtTelefono,
-                                         TextField txtDireccion,
-                                         ComboBox<CiudadHospitalModel> cmbCiudad,
-                                         ComboBox<String> cmbEstado) {
+                                        TextField txtDireccion,
+                                        ComboBox<CiudadModel> cmbCiudad,
+                                        ComboBox<String> cmbEstado) {
         Validacion.limpiarEstado(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
         StringBuilder sb = new StringBuilder();
         String e;
@@ -169,10 +169,24 @@ public class HospitalFormDialog {
     }
 
     /**
+     * Preselecciona en el combo la ciudad que coincida con el código indicado.
+     *
+     * @param cmb          Combo de ciudades
+     * @param codigoCiudad Código de la ciudad a preseleccionar
+     */
+    private void preseleccionarCiudad(ComboBox<CiudadModel> cmb, String codigoCiudad) {
+        if (codigoCiudad == null) return;
+        cmb.getItems().stream()
+                .filter(c -> codigoCiudad.equals(c.getCodigo()))
+                .findFirst()
+                .ifPresent(cmb::setValue);
+    }
+
+    /**
      * Crea un {@link TextField} estilizado con valor inicial y texto de ayuda.
      *
-     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía.
-     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío.
+     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía
+     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío
      */
     private TextField campoTexto(String inicial, String prompt) {
         TextField tf = new TextField(inicial == null ? "" : inicial);
@@ -183,8 +197,8 @@ public class HospitalFormDialog {
     }
 
     /** Crea el combo de ciudades precargado con la lista del controlador. */
-    private ComboBox<CiudadHospitalModel> comboCiudades() {
-        ComboBox<CiudadHospitalModel> cmb = new ComboBox<>();
+    private ComboBox<CiudadModel> comboCiudades() {
+        ComboBox<CiudadModel> cmb = new ComboBox<>();
         cmb.setMaxWidth(Double.MAX_VALUE);
         cmb.setPrefHeight(36);
         cmb.setPromptText("Selecciona una ciudad");
@@ -196,7 +210,7 @@ public class HospitalFormDialog {
     /**
      * Crea el combo de estado con opciones "Activo" e "Inactivo".
      *
-     * @param inicial Valor seleccionado por defecto.
+     * @param inicial Valor seleccionado por defecto
      */
     private ComboBox<String> comboEstado(String inicial) {
         ComboBox<String> cmb = new ComboBox<>();
@@ -214,7 +228,7 @@ public class HospitalFormDialog {
         grid.setHgap(14); grid.setVgap(14);
         grid.setPadding(new Insets(22, 24, 18, 24));
         ColumnConstraints c0 = new ColumnConstraints();
-        c0.setMinWidth(110); c0.setHalignment(javafx.geometry.HPos.RIGHT);
+        c0.setMinWidth(110); c0.setHalignment(HPos.RIGHT);
         ColumnConstraints c1 = new ColumnConstraints();
         c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
         grid.getColumnConstraints().addAll(c0, c1);
@@ -224,10 +238,10 @@ public class HospitalFormDialog {
     /**
      * Añade una fila de etiqueta + control al grid del formulario.
      *
-     * @param grid     Grid destino.
-     * @param fila     Índice de fila donde insertar.
-     * @param etiqueta Texto de la etiqueta descriptiva.
-     * @param control  Control de entrada (TextField, ComboBox, etc.).
+     * @param grid     Grid destino
+     * @param fila     Índice de fila donde insertar
+     * @param etiqueta Texto de la etiqueta descriptiva
+     * @param control  Control de entrada (TextField, ComboBox, etc.)
      */
     private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
         Label lbl = new Label(etiqueta);
@@ -249,8 +263,8 @@ public class HospitalFormDialog {
     /**
      * Hace visible el label de errores y muestra el mensaje indicado.
      *
-     * @param lbl     Label de errores creado con {@link #errorLabel()}.
-     * @param mensaje Texto de error a mostrar.
+     * @param lbl     Label de errores creado con {@link #errorLabel()}
+     * @param mensaje Texto de error a mostrar
      */
     private void mostrarErrores(Label lbl, String mensaje) {
         lbl.setText(mensaje);

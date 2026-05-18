@@ -1,5 +1,6 @@
 package views.hospital;
 
+import controllers.AreaInternaController.TipoArea;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -8,6 +9,7 @@ import models.AreaInternaModel;
 import services.HospitalService;
 import views.common.Validacion;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -15,12 +17,21 @@ import java.util.function.Supplier;
  * Diálogo reutilizable para crear y editar áreas internas de un hospital.
  *
  * <p>Si se pasa un {@link AreaInternaModel} existente, opera en modo edición;
- * si se pasa {@code null}, opera en modo creación y genera el código automáticamente.</p>
+ * si se pasa {@code null}, opera en modo creación y genera el código automáticamente.
+ * El tipo de área se selecciona mediante un combo alimentado con los tipos
+ * disponibles que ya existen en el sistema, evitando que el usuario tenga
+ * que conocer códigos foráneos.</p>
+ *
+ * @author Juan Sebastián López Guzmán
+ * @author Cristian Camilo Salazar Arenas
  */
 public class AreaFormDialog {
 
     /** Área a editar; {@code null} indica modo creación. */
     private final AreaInternaModel areaExistente;
+
+    /** Tipos de área interna disponibles para el combo "Tipo". */
+    private final List<TipoArea> tiposDisponibles;
 
     /** Callback invocado con el body resultante al pulsar "OK". */
     private final Consumer<Object> onGuardar;
@@ -31,18 +42,21 @@ public class AreaFormDialog {
     /**
      * Crea el diálogo vinculado a un área existente (edición) o en blanco (creación).
      *
-     * @param areaExistente  Área a editar, o {@code null} para crear una nueva.
-     * @param onGuardar      Callback que recibe {@link services.HospitalService.AreaCreateBody}
-     *                       o {@link services.HospitalService.AreaUpdateBody} al confirmar.
-     * @param generarCodigo  Supplier que devuelve el siguiente código disponible en modo creación;
-     *                       {@code null} en modo edición.
+     * @param areaExistente    Área a editar, o {@code null} para crear una nueva
+     * @param tiposDisponibles Lista de tipos de área disponibles para el combo
+     * @param onGuardar        Callback que recibe {@link services.HospitalService.AreaCreateBody}
+     *                         o {@link services.HospitalService.AreaUpdateBody} al confirmar
+     * @param generarCodigo    Supplier que devuelve el siguiente código disponible
+     *                         en modo creación; {@code null} en modo edición
      */
     public AreaFormDialog(AreaInternaModel areaExistente,
+                          List<TipoArea> tiposDisponibles,
                           Consumer<Object> onGuardar,
                           Supplier<String> generarCodigo) {
-        this.areaExistente  = areaExistente;
-        this.onGuardar      = onGuardar;
-        this.generarCodigo  = generarCodigo;
+        this.areaExistente    = areaExistente;
+        this.tiposDisponibles = tiposDisponibles;
+        this.onGuardar        = onGuardar;
+        this.generarCodigo    = generarCodigo;
     }
 
     /**
@@ -61,21 +75,21 @@ public class AreaFormDialog {
         // En modo creación el código se genera automáticamente; no se le pide al usuario.
         final String codigoGenerado = (!esEdicion && generarCodigo != null) ? generarCodigo.get() : null;
 
-        TextField txtNombre         = campoTexto(esEdicion ? areaExistente.nombre : "", "Nombre del área");
-        TextField txtDescripcion    = campoTexto(
+        TextField txtNombre      = campoTexto(esEdicion ? areaExistente.nombre : "", "Nombre del área");
+        TextField txtDescripcion = campoTexto(
                 esEdicion && areaExistente.descripcion != null ? areaExistente.descripcion : "",
                 "Descripción (opcional)");
-        TextField txtCodAreaInterna = campoTexto(
-                esEdicion ? areaExistente.codigoAreaInterna : "",
-                "Código del tipo de área");
+
+        ComboBox<TipoArea> cmbTipo = comboTipos();
+        if (esEdicion) preseleccionarTipo(cmbTipo, areaExistente.codigoAreaInterna);
 
         Label lblErrores = errorLabel();
 
         GridPane grid = formularioGrid();
         int fila = 0;
-        agregarFila(grid, fila++, "Nombre",        txtNombre);
-        agregarFila(grid, fila++, "Descripción",   txtDescripcion);
-        agregarFila(grid, fila++, "Tipo (código)", txtCodAreaInterna);
+        agregarFila(grid, fila++, "Nombre",      txtNombre);
+        agregarFila(grid, fila++, "Descripción", txtDescripcion);
+        agregarFila(grid, fila++, "Tipo",        cmbTipo);
         grid.add(lblErrores, 0, fila, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
@@ -87,21 +101,21 @@ public class AreaFormDialog {
 
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String resto = validarCamposComunes(txtNombre, txtDescripcion, txtCodAreaInterna);
+            String resto = validarCamposComunes(txtNombre, txtDescripcion, cmbTipo);
             if (resto != null) { mostrarErrores(lblErrores, resto); ev.consume(); }
         });
 
         dialog.setResultConverter(btn -> {
             if (btn != ButtonType.OK) return null;
+            String codigoTipo = cmbTipo.getValue().codigo();
             if (esEdicion) {
                 return new HospitalService.AreaUpdateBody(
                         Validacion.texto(txtNombre), Validacion.texto(txtDescripcion),
-                        Validacion.texto(txtCodAreaInterna));
-            } else {
-                return new HospitalService.AreaCreateBody(
-                        codigoGenerado, Validacion.texto(txtNombre),
-                        Validacion.texto(txtDescripcion), Validacion.texto(txtCodAreaInterna));
+                        codigoTipo);
             }
+            return new HospitalService.AreaCreateBody(
+                    codigoGenerado, Validacion.texto(txtNombre),
+                    Validacion.texto(txtDescripcion), codigoTipo);
         });
 
         cargarEstilos(dialog);
@@ -111,11 +125,11 @@ public class AreaFormDialog {
     /**
      * Valida todos los campos del formulario de área.
      *
-     * @return Cadena con todos los errores encontrados, o {@code null} si todo es válido.
+     * @return Cadena con todos los errores encontrados, o {@code null} si todo es válido
      */
     private String validarCamposComunes(TextField txtNombre, TextField txtDescripcion,
-                                         TextField txtCodAreaInterna) {
-        Validacion.limpiarEstado(txtNombre, txtDescripcion, txtCodAreaInterna);
+                                        ComboBox<TipoArea> cmbTipo) {
+        Validacion.limpiarEstado(txtNombre, txtDescripcion, cmbTipo);
         StringBuilder sb = new StringBuilder();
         String e;
 
@@ -128,19 +142,32 @@ public class AreaFormDialog {
         Validacion.marcarInvalido(txtDescripcion, e != null);
         if (e != null) sb.append(e).append("\n");
 
-        e = Validacion.requerido("Tipo (código)", Validacion.texto(txtCodAreaInterna));
-        if (e == null) e = Validacion.formatoCodigo("Tipo (código)", Validacion.texto(txtCodAreaInterna));
-        Validacion.marcarInvalido(txtCodAreaInterna, e != null);
+        e = Validacion.comboSeleccionado("un tipo de área", cmbTipo);
+        Validacion.marcarInvalido(cmbTipo, e != null);
         if (e != null) sb.append(e).append("\n");
 
         return sb.length() == 0 ? null : sb.toString().trim();
     }
 
     /**
+     * Preselecciona en el combo el tipo que coincida con el código indicado.
+     *
+     * @param cmb         Combo de tipos
+     * @param codigoTipo  Código del tipo de área a preseleccionar
+     */
+    private void preseleccionarTipo(ComboBox<TipoArea> cmb, String codigoTipo) {
+        if (codigoTipo == null) return;
+        cmb.getItems().stream()
+                .filter(t -> codigoTipo.equals(t.codigo()))
+                .findFirst()
+                .ifPresent(cmb::setValue);
+    }
+
+    /**
      * Crea un {@link TextField} estilizado con valor inicial y texto de ayuda.
      *
-     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía.
-     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío.
+     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía
+     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío
      */
     private TextField campoTexto(String inicial, String prompt) {
         TextField tf = new TextField(inicial == null ? "" : inicial);
@@ -148,6 +175,17 @@ public class AreaFormDialog {
         tf.getStyleClass().add("campo-form");
         tf.setPrefHeight(36);
         return tf;
+    }
+
+    /** Crea el combo de tipos de área precargado con los disponibles del sistema. */
+    private ComboBox<TipoArea> comboTipos() {
+        ComboBox<TipoArea> cmb = new ComboBox<>();
+        cmb.setMaxWidth(Double.MAX_VALUE);
+        cmb.setPrefHeight(36);
+        cmb.setPromptText("Selecciona un tipo");
+        cmb.getItems().setAll(tiposDisponibles);
+        cmb.getStyleClass().add("campo-form");
+        return cmb;
     }
 
     /** Crea el {@link GridPane} base del formulario con dos columnas (etiqueta / control). */
@@ -166,10 +204,10 @@ public class AreaFormDialog {
     /**
      * Añade una fila de etiqueta + control al grid del formulario.
      *
-     * @param grid     Grid destino.
-     * @param fila     Índice de fila donde insertar.
-     * @param etiqueta Texto de la etiqueta descriptiva.
-     * @param control  Control de entrada (TextField, ComboBox, etc.).
+     * @param grid     Grid destino
+     * @param fila     Índice de fila donde insertar
+     * @param etiqueta Texto de la etiqueta descriptiva
+     * @param control  Control de entrada (TextField, ComboBox, etc.)
      */
     private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
         Label lbl = new Label(etiqueta);
@@ -191,8 +229,8 @@ public class AreaFormDialog {
     /**
      * Hace visible el label de errores y muestra el mensaje indicado.
      *
-     * @param lbl     Label de errores creado con {@link #errorLabel()}.
-     * @param mensaje Texto de error a mostrar.
+     * @param lbl     Label de errores creado con {@link #errorLabel()}
+     * @param mensaje Texto de error a mostrar
      */
     private void mostrarErrores(Label lbl, String mensaje) {
         lbl.setText(mensaje);

@@ -1,6 +1,7 @@
 package views.hospital;
 
 import controllers.AreaInternaController;
+import controllers.AreaInternaController.TipoArea;
 import controllers.HospitalController;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -9,9 +10,12 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import models.AreaInternaModel;
+import models.HospitalModel;
 import services.HospitalService;
 import views.common.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -31,6 +35,9 @@ import java.util.function.Supplier;
  *     <li>Crear o manejar {@code Task}.</li>
  *     <li>Gestionar errores de red.</li>
  * </ul>
+ *
+ * @author Juan Sebastián López Guzmán
+ * @author Cristian Camilo Salazar Arenas
  */
 public class HospitalDetalleView extends VBox {
 
@@ -45,6 +52,9 @@ public class HospitalDetalleView extends VBox {
 
     /** Acción ejecutada al pulsar "Volver"; puede ser {@code null}. */
     private final Runnable onVolver;
+
+    /** Tipos de área disponibles, precargados para reutilizar en los diálogos. */
+    private List<TipoArea> tiposCache = new ArrayList<>();
 
     private final Label nombreHospital     = new Label("Cargando...");
 
@@ -68,8 +78,8 @@ public class HospitalDetalleView extends VBox {
     /**
      * Construye la vista, conecta los controladores y lanza la carga de datos.
      *
-     * @param codigoHospital Código único del hospital a mostrar.
-     * @param onVolver       Acción que se ejecuta al pulsar el botón "Volver"; puede ser {@code null}.
+     * @param codigoHospital Código único del hospital a mostrar
+     * @param onVolver       Acción que se ejecuta al pulsar "Volver"; puede ser {@code null}
      */
     public HospitalDetalleView(String codigoHospital, Runnable onVolver) {
         this.codigoHospital = codigoHospital;
@@ -83,12 +93,13 @@ public class HospitalDetalleView extends VBox {
         cargarEstilos();
         hospitalController.cargarHospitalPorId(codigoHospital, this::mostrarInfoHospital);
         areaController.cargarAreas();
+        areaController.cargarTiposDisponibles(tipos -> tiposCache = new ArrayList<>(tipos));
     }
 
     /**
-     * Constructor alternativo sin acción de volver (compatibilidad).
+     * Constructor alternativo sin acción de volver.
      *
-     * @param codigoHospital Código único del hospital a mostrar.
+     * @param codigoHospital Código único del hospital a mostrar
      */
     public HospitalDetalleView(String codigoHospital) {
         this(codigoHospital, null);
@@ -114,9 +125,9 @@ public class HospitalDetalleView extends VBox {
     /**
      * Muestra los datos del hospital en el encabezado y las tarjetas de info.
      *
-     * @param h Hospital cargado por el controller.
+     * @param h Hospital cargado por el controller
      */
-    private void mostrarInfoHospital(models.HospitalModel h) {
+    private void mostrarInfoHospital(HospitalModel h) {
         nombreHospital.setText(h.nombre);
         subtitulo.setText("Colombia > " + h.nombreCiudad + " > " + h.nombre);
         lblTelefono.setText(h.telefono);
@@ -210,10 +221,9 @@ public class HospitalDetalleView extends VBox {
     /**
      * Crea una tarjeta de información con etiqueta y valor.
      *
-     * @param etiqueta Título descriptivo de la tarjeta (ej. "Teléfono").
-     * @param valor    Label que mostrará el dato dinámico.
-     * @param esEstado Si es {@code true}, añade la clase base {@code card-estado} para
-     *                 permitir colorizado dinámico según el estado del hospital.
+     * @param etiqueta Título descriptivo de la tarjeta (ej. "Teléfono")
+     * @param valor    Label que mostrará el dato dinámico
+     * @param esEstado Si es {@code true}, añade la clase base {@code card-estado}
      */
     private VBox crearCard(String etiqueta, Label valor, boolean esEstado) {
         Label lbl = new Label(etiqueta);
@@ -241,7 +251,13 @@ public class HospitalDetalleView extends VBox {
      * Abre el diálogo para crear una nueva área.
      */
     private void abrirDialogoNuevaArea() {
-        new AreaFormDialog(null, body -> {
+        if (tiposCache.isEmpty()) {
+            new Alert(Alert.AlertType.WARNING,
+                    "No hay tipos de área disponibles. Espera a que terminen de cargar e inténtalo de nuevo.",
+                    ButtonType.OK).showAndWait();
+            return;
+        }
+        new AreaFormDialog(null, tiposCache, body -> {
             HospitalService.AreaCreateBody createBody = (HospitalService.AreaCreateBody) body;
             areaController.crear(createBody, createBody.nombre());
         }, areaController::generarCodigo).show();
@@ -250,10 +266,10 @@ public class HospitalDetalleView extends VBox {
     /**
      * Abre el diálogo para editar un área existente.
      *
-     * @param area Área a editar.
+     * @param area Área a editar
      */
     private void abrirDialogoEditarArea(AreaInternaModel area) {
-        new AreaFormDialog(area, body -> {
+        new AreaFormDialog(area, tiposCache, body -> {
             HospitalService.AreaUpdateBody updateBody = (HospitalService.AreaUpdateBody) body;
             areaController.actualizar(area.codigo, updateBody, updateBody.nombre());
         }, (Supplier<String>) null).show();
@@ -262,8 +278,8 @@ public class HospitalDetalleView extends VBox {
     /**
      * Crea un botón con un icono Unicode y las clases CSS indicadas.
      *
-     * @param icono  Carácter o emoji que se muestra como texto del botón.
-     * @param clases Clases CSS que se aplican al botón.
+     * @param icono  Carácter o emoji que se muestra como texto del botón
+     * @param clases Clases CSS que se aplican al botón
      */
     private Button btnIcono(String icono, String... clases) {
         Button btn = new Button(icono);
