@@ -67,6 +67,21 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                 });
     }
 
+    @Override
+    public CompletableFuture<String> getAllCustom(String path){
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .GET()
+                .build();
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> {
+                    if (resp.statusCode() >= 400)
+                        throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
+                    return resp.body();
+                });
+    }
+
     /**
      * Realiza una petición GET para obtener un recurso por su identificador.
      *

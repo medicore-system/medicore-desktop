@@ -86,6 +86,21 @@ public class MedicoController {
     }
 
     /**
+     * Carga todos los medicos desde el servidor en un hilo secundario.
+     * Al terminar notifica a la vista via onDatosActualizados.
+     */
+    public void cargarMedicosActivos() {
+        medicoService.getAllMedicosActivos().thenAccept(medicos-> Platform.runLater(() -> {
+            listaMedicos = new ArrayList<>(medicos);
+            if(onDatosActualizados != null) onDatosActualizados.accept(listaMedicos);
+        })).exceptionally(e -> {
+            Platform.runLater(() -> notificarError("No se puede cargar los usuarios.\n" + "Verifica que el servidor este corriendo en localhost:8080"));
+            return null;
+        });
+
+    }
+
+    /**
      * Carga las ciudades disponibles para los formularios.
      *
      * @param onListo Callback que recibe la lista de ciudades al terminar.
