@@ -4,6 +4,7 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import views.asignacion.AsignacionView;
+import views.asignacion.asignacionesMedico.AsignacionesMedicoView;
 import views.ciudad.CiudadView;
 import views.costo.CostoView;
 import views.facturacion.FacturacionView;
@@ -43,7 +44,7 @@ public class MainLayout extends BorderPane {
         ciudades.setOnAction    (e -> {setCenter(new CiudadView());});
         hospitales.setOnAction  (e -> mostrarHospitales());
         medicos.setOnAction     (e -> {setCenter(new MedicoView());});
-        asignaciones.setOnAction(e -> {setCenter(new AsignacionView());});
+        asignaciones.setOnAction(e -> mostrarAsignaciones());
         pacientes.setOnAction   (e -> mostrarUsuarios());
         servicios.setOnAction   (e -> {setCenter(new ServicioView());});
         costos.setOnAction      (e -> {setCenter(new CostoView());});
@@ -81,5 +82,10 @@ public class MainLayout extends BorderPane {
     private void mostrarUsuarios(){
         setCenter(new UsuarioView(codigo ->
                 setCenter(new CitasUsuarioView(codigo, this::mostrarUsuarios))));
+    }
+
+    private void mostrarAsignaciones() {
+        setCenter(new AsignacionView(medico ->
+                setCenter(new AsignacionesMedicoView(medico, this::mostrarAsignaciones))));
     }
 }

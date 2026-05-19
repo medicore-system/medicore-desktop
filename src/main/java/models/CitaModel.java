@@ -30,12 +30,7 @@ public class CitaModel {
     /**
      * Fecha y hora programada de la cita.
      */
-    private LocalDateTime fecha;
-
-    /**
-     * Hora específica asignada para la cita.
-     */
-    private String hora;
+    private String fecha;
 
     /**
      * Valor monetario de la cita.
@@ -79,20 +74,12 @@ public class CitaModel {
         this.estado = estado;
     }
 
-    public LocalDateTime getFecha() {
+    public String getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDateTime fecha) {
+    public void setFecha(String fecha) {
         this.fecha = fecha;
-    }
-
-    public String getHora() {
-        return hora;
-    }
-
-    public void setHora(String hora) {
-        this.hora = hora;
     }
 
     public BigDecimal getCosto() {

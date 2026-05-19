@@ -112,18 +112,16 @@ public class CitasUsuarioView extends VBox {
         colFecha.setCellValueFactory(c ->
                 new javafx.beans.property.SimpleStringProperty(c.getValue().getFecha().toString()));
 
+        TableColumn<CitaModel, String> colCosto = new TableColumn<>("Costo");
+        colCosto.setCellValueFactory( c ->
+                new javafx.beans.property.SimpleStringProperty("$" + c.getValue().getCosto().toString()));
+
         // Medico
         TableColumn<CitaModel, String> colMedico = new TableColumn<>("Medico");
         colMedico.setCellValueFactory(c ->
                 new javafx.beans.property.SimpleStringProperty(c.getValue().getMedico()));
         colMedico.setMaxWidth(130);
         colMedico.setMinWidth(100);
-
-        // Hora
-        TableColumn<CitaModel, String> colHora = new TableColumn<>("Hora");
-        colHora.setCellValueFactory(c ->
-                new javafx.beans.property.SimpleStringProperty(c.getValue().getHora()));
-        colHora.setMaxWidth(90);
 
         TableColumn<CitaModel, String> colEstado = new TableColumn<>("Estado");
         colEstado.setMaxWidth(100);
@@ -175,8 +173,8 @@ public class CitasUsuarioView extends VBox {
             }
         });
 
-        tabla.getColumns().addAll(colPaciente, colEspecialidad, colFecha,
-                colHora, colEstado, colAcciones);
+        tabla.getColumns().addAll(colPaciente, colEspecialidad, colFecha, colMedico,
+                colCosto, colEstado, colAcciones);
     }
 
     /**

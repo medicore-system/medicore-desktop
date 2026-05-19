@@ -45,9 +45,14 @@ public class MedicoModel {
     private String status;
 
     /**
-     * Código de la ciudad donde se encuentra el médico.
+     * Nombre de la ciudad donde se encuentra el médico.
      */
     private String nombreCiudad;
+
+    /**
+     * Código de la ciudad donde se encuentra el médico.
+     */
+    private String codigoCiudad;
 
     /**
      * Obtiene el documento del médico.
@@ -191,5 +196,13 @@ public class MedicoModel {
      */
     public void setNombreCiudad(String nombreCiudad) {
         this.nombreCiudad = nombreCiudad;
+    }
+
+    public String getCodigoCiudad() {
+        return codigoCiudad;
+    }
+
+    public void setCodigoCiudad(String codigoCiudad) {
+        this.codigoCiudad = codigoCiudad;
     }
 }
