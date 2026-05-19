@@ -162,7 +162,7 @@ public class ServicioView extends VBox {
         colAcciones.setCellFactory(col -> new TableCell<>() {
             private final Button btnVer      = btnIcono("👁", "btn-icono", "btn-ver");
             private final Button btnEditar   = btnIcono("✎",  "btn-icono", "btn-editar");
-            private final Button btnInactivar = btnIcono("🚫", "btn-icono", "btn-toggle");
+            private final Button btnInactivar = btnIcono("⏻", "btn-icono", "btn-toggle");
             private final HBox   caja        = new HBox(8, btnVer, btnEditar, btnInactivar);
             { caja.setAlignment(Pos.CENTER); caja.setPadding(new Insets(0, 4, 0, 4)); }
 
