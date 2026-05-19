@@ -62,7 +62,7 @@ public final class ServicioFormulario {
 
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String error = validarComun(txtNombre, txtDesc, txtPrecio, cmbTipo);
+            String error = validarComun(txtNombre, txtDesc, txtPrecio, cmbTipo, null);
             if (error != null) {
                 mostrarErroresInline(lblErrores, error);
                 ev.consume();
@@ -119,7 +119,7 @@ public final class ServicioFormulario {
 
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
-            String error = validarComun(txtNombre, txtDesc, txtPrecio, cmbTipo);
+            String error = validarComun(txtNombre, txtDesc, txtPrecio, cmbTipo, cmbEstado);
             if (error != null) {
                 mostrarErroresInline(lblErrores, error);
                 ev.consume();
@@ -181,29 +181,60 @@ public final class ServicioFormulario {
      *
      * @return null si todo está bien, o un String con los mensajes de error.
      */
-    private static String validarComun(TextField txtNombre, TextField txtDesc,
-                                       TextField txtPrecio, ComboBox<TipoServicioModel> cmbTipo) {
-        Validacion.limpiarEstado(txtNombre, txtDesc, txtPrecio, cmbTipo);
+    private static String validarComun(TextField txtNombre,
+                                       TextField txtDesc,
+                                       TextField txtPrecio,
+                                       ComboBox<TipoServicioModel> cmbTipo,
+                                       ComboBox<String> cmbEstado) {
 
-        List<Regla> reglas = List.of(
-                new Regla(txtNombre, () -> primero(
-                        Validacion.requerido("Nombre", Validacion.texto(txtNombre)),
-                        Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 50))),
-                new Regla(txtDesc, () -> primero(
-                        Validacion.requerido("Descripción", Validacion.texto(txtDesc)),
-                        Validacion.longitudMax("Descripción", Validacion.texto(txtDesc), 250))),
-                new Regla(cmbTipo, () -> cmbTipo.getValue() == null ? "• Selecciona un tipo" : null),
-                new Regla(txtPrecio, () -> primero(
-                        Validacion.requerido("Precio", Validacion.texto(txtPrecio)),
-                        Validacion.numeroPositivo("Precio", Validacion.texto(txtPrecio))))
-        );
+        if (cmbEstado == null) {
+            Validacion.limpiarEstado(txtNombre, txtDesc, txtPrecio, cmbTipo);
+        } else {
+            Validacion.limpiarEstado(txtNombre, txtDesc, txtPrecio, cmbTipo, cmbEstado);
+        }
+
+        List<Regla> reglas = new java.util.ArrayList<>();
+
+        reglas.add(new Regla(txtNombre, () -> primero(
+                Validacion.requerido("Nombre", Validacion.texto(txtNombre)),
+                Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 50),
+                Validacion.noSoloNumeros("Nombre", Validacion.texto(txtNombre)),
+                Validacion.sinCaracteresPeligrosos("Nombre", Validacion.texto(txtNombre))
+        )));
+
+        reglas.add(new Regla(txtDesc, () -> primero(
+                Validacion.requerido("Descripción", Validacion.texto(txtDesc)),
+                Validacion.longitudMax("Descripción", Validacion.texto(txtDesc), 250),
+                Validacion.noSoloNumeros("Descripción", Validacion.texto(txtDesc)),
+                Validacion.sinCaracteresPeligrosos("Descripción", Validacion.texto(txtDesc))
+        )));
+
+        reglas.add(new Regla(cmbTipo, () ->
+                cmbTipo.getValue() == null ? "• Selecciona un tipo" : null
+        ));
+
+        reglas.add(new Regla(txtPrecio, () -> primero(
+                Validacion.requerido("Precio", Validacion.texto(txtPrecio)),
+                Validacion.numeroPositivo("Precio", Validacion.texto(txtPrecio))
+        )));
+
+        if (cmbEstado != null) {
+            reglas.add(new Regla(cmbEstado, () ->
+                    cmbEstado.getValue() == null ? "• Selecciona un estado" : null
+            ));
+        }
 
         StringBuilder sb = new StringBuilder();
+
         for (Regla r : reglas) {
             String error = r.evaluar().get();
             Validacion.marcarInvalido(r.control(), error != null);
-            if (error != null) sb.append(error).append("\n");
+
+            if (error != null) {
+                sb.append(error).append("\n");
+            }
         }
+
         return sb.length() == 0 ? null : sb.toString().trim();
     }
 
