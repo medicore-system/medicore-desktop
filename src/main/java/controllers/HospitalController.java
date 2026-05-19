@@ -1,28 +1,34 @@
 package controllers;
 
 import javafx.application.Platform;
+import models.CiudadModel;
 import models.HospitalModel;
 import services.HospitalService;
-import views.hospital.CiudadHospitalModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 /**
  * Controlador de la sección de Hospitales.
  *
- * Centraliza toda la lógica de negocio: llama a {@link HospitalService} en
- * hilos secundarios ({@code CompletableFuture}), mantiene la lista local de
- * hospitales y notifica a la vista mediante callbacks cuando los datos cambian.
- * La vista no accede al servicio ni crea hilos directamente.
+ * <p>
+ * Centraliza la lógica de negocio: llama al {@link HospitalService} en hilos
+ * secundarios (a través de {@code CompletableFuture}), mantiene la lista local
+ * de hospitales y notifica a la vista mediante callbacks cuando los datos cambian.
+ * La vista no consume el servicio directamente ni gestiona hilos.
+ * </p>
+ *
+ * @author Juan Sebastián López Guzmán
+ * @author Cristian Camilo Salazar Arenas
  */
 public class HospitalController {
 
+    /** Prefijo utilizado para generar nuevos códigos de hospital. */
+    private static final String PREFIJO_CODIGO = "HOS";
+
     /** Servicio HTTP que comunica con el backend. */
-    private final HospitalService service = new HospitalService();
+    private final HospitalService service = HospitalService.getInstance();
 
     /** Lista completa de hospitales cargados. Base para filtros locales. */
     private List<HospitalModel> todos = new ArrayList<>();
@@ -39,7 +45,7 @@ public class HospitalController {
     /**
      * Registra el callback que recibe la lista actualizada de hospitales.
      *
-     * @param cb Función que acepta la lista de {@link HospitalModel}.
+     * @param cb Función que acepta la lista de {@link HospitalModel}
      */
     public void setOnDatosActualizados(Consumer<List<HospitalModel>> cb) {
         this.onDatosActualizados = cb;
@@ -48,7 +54,7 @@ public class HospitalController {
     /**
      * Registra el callback que recibe mensajes de error de red o servidor.
      *
-     * @param cb Función que acepta el mensaje de error.
+     * @param cb Función que acepta el mensaje de error
      */
     public void setOnError(Consumer<String> cb) {
         this.onError = cb;
@@ -57,71 +63,68 @@ public class HospitalController {
     /**
      * Registra el callback que recibe mensajes de éxito tras crear o actualizar.
      *
-     * @param cb Función que acepta el mensaje de confirmación.
+     * @param cb Función que acepta el mensaje de confirmación
      */
     public void setOnExito(Consumer<String> cb) {
         this.onExito = cb;
     }
 
     /**
-     * Carga todos los hospitales desde el servidor en un hilo secundario.
-     * Al terminar, actualiza {@code todos} y dispara {@code onDatosActualizados}.
+     * Carga todos los hospitales desde el servidor.
+     * Al terminar, actualiza la lista local y dispara {@code onDatosActualizados}.
      */
     public void cargarHospitales() {
-        CompletableFuture.supplyAsync(() -> {
-            try { return service.getAll(); }
-            catch (Exception e) { throw new CompletionException(e); }
-        }).thenAccept(hospitales -> Platform.runLater(() -> {
-            todos = new ArrayList<>(hospitales);
-            if (onDatosActualizados != null) onDatosActualizados.accept(todos);
-        })).exceptionally(e -> {
-            Platform.runLater(() -> notificarError(
-                    "No se pudieron cargar los hospitales.\n" +
-                    "Verifica que el servidor esté corriendo en localhost:8080."));
-            return null;
-        });
+        service.getAllHospitals()
+                .thenAccept(hospitales -> Platform.runLater(() -> {
+                    todos = new ArrayList<>(hospitales);
+                    if (onDatosActualizados != null) onDatosActualizados.accept(todos);
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> notificarError(
+                            "No se pudieron cargar los hospitales.\n" +
+                            "Verifica que el servidor esté corriendo en localhost:8080."));
+                    return null;
+                });
     }
 
     /**
      * Carga un hospital por su código y lo entrega al callback.
      * Usado por {@code HospitalDetalleView} para mostrar el encabezado.
      *
-     * @param codigo  Código único del hospital.
-     * @param onListo Callback que recibe el {@link HospitalModel} al terminar.
+     * @param codigo  Código único del hospital
+     * @param onListo Callback que recibe el {@link HospitalModel}
      */
     public void cargarHospitalPorId(String codigo, Consumer<HospitalModel> onListo) {
-        CompletableFuture.supplyAsync(() -> {
-            try { return service.getById(codigo); }
-            catch (Exception e) { throw new CompletionException(e); }
-        }).thenAccept(h -> Platform.runLater(() -> onListo.accept(h)))
-        .exceptionally(e -> {
-            Platform.runLater(() -> notificarError("No se pudo cargar la información del hospital."));
-            return null;
-        });
+        service.getHospitalById(codigo)
+                .thenAccept(h -> Platform.runLater(() -> onListo.accept(h)))
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            notificarError("No se pudo cargar la información del hospital."));
+                    return null;
+                });
     }
 
     /**
      * Carga las ciudades disponibles para el combo del formulario.
      *
-     * @param onListo Callback que recibe la lista de {@link CiudadHospitalModel}.
+     * @param onListo Callback que recibe la lista de {@link CiudadModel}
      */
-    public void cargarCiudades(Consumer<List<CiudadHospitalModel>> onListo) {
-        CompletableFuture.supplyAsync(() -> {
-            try { return service.getCiudades(); }
-            catch (Exception e) { throw new CompletionException(e); }
-        }).thenAccept(ciudades -> Platform.runLater(() -> onListo.accept(ciudades)))
-        .exceptionally(e -> {
-            Platform.runLater(() -> notificarError("No se pudieron cargar las ciudades."));
-            return null;
-        });
+    public void cargarCiudades(Consumer<List<CiudadModel>> onListo) {
+        service.getAllCiudades()
+                .thenAccept(ciudades -> Platform.runLater(() -> onListo.accept(ciudades)))
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            notificarError("No se pudieron cargar las ciudades."));
+                    return null;
+                });
     }
 
     /**
      * Filtra la lista local sin llamar al servidor.
      * Busca coincidencias en código, nombre, dirección, teléfono y ciudad.
      *
-     * @param texto Texto del buscador. Si es vacío o nulo, devuelve todos.
-     * @return Lista de hospitales que coinciden con el texto.
+     * @param texto Texto del buscador. Si es vacío o nulo, devuelve todos
+     * @return Lista de hospitales que coinciden con el texto
      */
     public List<HospitalModel> filtrar(String texto) {
         if (texto == null || texto.isBlank()) return todos;
@@ -139,56 +142,57 @@ public class HospitalController {
     /**
      * Envía la petición de creación al servidor y recarga la lista al terminar.
      *
-     * @param body   Datos del nuevo hospital.
-     * @param nombre Nombre para el mensaje de confirmación.
+     * @param body   Datos del nuevo hospital
+     * @param nombre Nombre para el mensaje de confirmación
      */
     public void crear(HospitalService.HospitalCreateBody body, String nombre) {
-        CompletableFuture.supplyAsync(() -> {
-            try { return service.createHospital(body); }
-            catch (Exception e) { throw new CompletionException(e); }
-        }).thenAccept(h -> Platform.runLater(() -> {
-            if (onExito != null) onExito.accept("Hospital '" + nombre + "' creado correctamente");
-            cargarHospitales();
-        })).exceptionally(e -> {
-            Platform.runLater(() -> notificarError(
-                    "Error al crear el hospital.\n" +
-                    "Verifica que el código y ciudad sean válidos."));
-            return null;
-        });
+        service.crear(body)
+                .thenAccept(h -> Platform.runLater(() -> {
+                    if (onExito != null)
+                        onExito.accept("Hospital '" + nombre + "' creado correctamente");
+                    cargarHospitales();
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> notificarError(
+                            "Error al crear el hospital.\n" +
+                            "Verifica que el código y la ciudad sean válidos."));
+                    return null;
+                });
     }
 
     /**
      * Envía la petición de actualización al servidor y recarga la lista.
      *
-     * @param codigo Código del hospital a actualizar.
-     * @param body   Nuevos datos del hospital.
-     * @param nombre Nombre para el mensaje de confirmación.
+     * @param codigo Código del hospital a actualizar
+     * @param body   Nuevos datos del hospital
+     * @param nombre Nombre para el mensaje de confirmación
      */
     public void actualizar(String codigo, HospitalService.HospitalUpdateBody body, String nombre) {
-        CompletableFuture.supplyAsync(() -> {
-            try { return service.update(codigo, body); }
-            catch (Exception e) { throw new CompletionException(e); }
-        }).thenAccept(h -> Platform.runLater(() -> {
-            if (onExito != null) onExito.accept("Hospital '" + nombre + "' actualizado correctamente");
-            cargarHospitales();
-        })).exceptionally(e -> {
-            Platform.runLater(() -> notificarError("Error al actualizar el hospital."));
-            return null;
-        });
+        service.actualizar(codigo, body)
+                .thenAccept(h -> Platform.runLater(() -> {
+                    if (onExito != null)
+                        onExito.accept("Hospital '" + nombre + "' actualizado correctamente");
+                    cargarHospitales();
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() ->
+                            notificarError("Error al actualizar el hospital."));
+                    return null;
+                });
     }
 
     /**
      * Genera el siguiente código disponible con formato {@code HOS###}.
-     * Incrementa hasta encontrar uno que no exista en la lista local.
+     * Incrementa el contador hasta encontrar uno que no exista en la lista local.
      *
-     * @return Código listo para usar, ej. {@code HOS003}.
+     * @return Código listo para usar, p. ej. {@code HOS003}
      */
     public String generarCodigo() {
         int n = todos.size() + 1;
-        String candidato = String.format("HOS%03d", n);
+        String candidato = String.format("%s%03d", PREFIJO_CODIGO, n);
         while (codigoYaExiste(candidato)) {
             n++;
-            candidato = String.format("HOS%03d", n);
+            candidato = String.format("%s%03d", PREFIJO_CODIGO, n);
         }
         return candidato;
     }
@@ -196,8 +200,8 @@ public class HospitalController {
     /**
      * Indica si el código ya está en uso en la lista local.
      *
-     * @param codigo Código a verificar (ignorando mayúsculas/minúsculas).
-     * @return {@code true} si ya existe; {@code false} en caso contrario.
+     * @param codigo Código a verificar (ignorando mayúsculas/minúsculas)
+     * @return {@code true} si ya existe; {@code false} en caso contrario
      */
     public boolean codigoYaExiste(String codigo) {
         if (codigo == null || codigo.isBlank()) return false;
@@ -212,9 +216,9 @@ public class HospitalController {
     /**
      * Comprueba si un campo contiene el texto buscado (sin importar mayúsculas).
      *
-     * @param campo Valor del campo a revisar; puede ser {@code null}.
-     * @param texto Texto buscado en minúsculas.
-     * @return {@code true} si el campo contiene el texto.
+     * @param campo Valor del campo a revisar; puede ser {@code null}
+     * @param texto Texto buscado en minúsculas
+     * @return {@code true} si el campo contiene el texto
      */
     private boolean contiene(String campo, String texto) {
         return campo != null && campo.toLowerCase().contains(texto);

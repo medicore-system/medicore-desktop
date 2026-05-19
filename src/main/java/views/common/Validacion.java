@@ -36,30 +36,41 @@ public final class Validacion {
         return null;
     }
 
-    public static String noSoloNumeros(String etiqueta, String valor) {
+    /**
+     * Verifica que el valor tenga al menos {@code min} caracteres no en blanco.
+     * Si el campo está vacío devuelve {@code null} (esa regla la cubre
+     * {@link #requerido(String, String)}).
+     *
+     * @param etiqueta nombre del campo que se mostrará en el mensaje
+     * @param valor    texto que escribió el usuario
+     * @param min      cantidad mínima de caracteres exigida
+     * @return mensaje de error o {@code null} si es válido
+     */
+    public static String longitudMin(String etiqueta, String valor, int min) {
         if (valor == null || valor.isBlank()) return null;
-
-        String texto = valor.trim();
-
-        if (texto.matches("\\d+")) {
-            return "• " + etiqueta + " no puede contener solo números";
+        if (valor.trim().length() < min) {
+            return "• " + etiqueta + " debe tener al menos " + min + " caracteres";
         }
-
         return null;
     }
 
-    public static String sinCaracteresPeligrosos(String etiqueta, String valor) {
+    /**
+     * Verifica que el valor contenga al menos {@code min} dígitos numéricos.
+     * Pensado para teléfonos: el patrón {@link #formatoTelefono(String)}
+     * permite paréntesis, espacios y guiones, así que sin esta validación
+     * un usuario podría guardar un teléfono como {@code "(- )"}.
+     *
+     * @param etiqueta nombre del campo que se mostrará en el mensaje
+     * @param valor    texto que escribió el usuario
+     * @param min      cantidad mínima de dígitos exigida
+     * @return mensaje de error o {@code null} si es válido
+     */
+    public static String minDigitos(String etiqueta, String valor, int min) {
         if (valor == null || valor.isBlank()) return null;
-
-        String texto = valor.trim();
-
-        if (texto.contains("<") || texto.contains(">") ||
-                texto.contains("{") || texto.contains("}") ||
-                texto.contains("[") || texto.contains("]") ||
-                texto.contains("\\")) {
-            return "• " + etiqueta + " contiene caracteres no permitidos";
+        long digitos = valor.chars().filter(Character::isDigit).count();
+        if (digitos < min) {
+            return "• " + etiqueta + " debe incluir al menos " + min + " dígitos";
         }
-
         return null;
     }
 

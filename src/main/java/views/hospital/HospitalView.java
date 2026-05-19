@@ -7,15 +7,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import models.CiudadModel;
 import models.HospitalModel;
 import services.HospitalService;
 import views.common.Toast;
 
-import java.util.function.Supplier;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Vista principal para la gestión de hospitales.
@@ -34,6 +34,9 @@ import java.util.function.Consumer;
  *     <li>Crear o manejar {@code Task}.</li>
  *     <li>Gestionar errores de red.</li>
  * </ul>
+ *
+ * @author Juan Sebastián López Guzmán
+ * @author Cristian Camilo Salazar Arenas
  */
 public class HospitalView extends VBox {
 
@@ -44,7 +47,7 @@ public class HospitalView extends VBox {
     private final HospitalController controller = new HospitalController();
 
     /** Ciudades cargadas al inicio, reutilizadas en los formularios de creación y edición. */
-    private List<CiudadHospitalModel> ciudadesCache = new ArrayList<>();
+    private List<CiudadModel> ciudadesCache = new ArrayList<>();
 
     private final Label titulo            = new Label("Gestión de Hospitales");
     private final TextField buscador      = new TextField();
