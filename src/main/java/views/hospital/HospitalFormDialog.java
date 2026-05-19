@@ -1,9 +1,7 @@
 package views.hospital;
 
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.GridPane;
 import models.CiudadModel;
 import models.HospitalModel;
 import services.HospitalService;
@@ -73,9 +71,9 @@ public class HospitalFormDialog {
         // En modo creación el código se genera automáticamente; no se le pide al usuario.
         final String codigoGenerado = (!esEdicion && generarCodigo != null) ? generarCodigo.get() : null;
 
-        TextField txtNombre    = campoTexto(esEdicion ? hospitalExistente.nombre    : "", "Nombre del hospital");
-        TextField txtDireccion = campoTexto(esEdicion ? hospitalExistente.direccion : "", "Dirección física");
-        TextField txtTelefono  = campoTexto(esEdicion ? hospitalExistente.telefono  : "", "Ej: (601) 000-0000");
+        TextField txtNombre    = FormularioUtils.campoTexto(esEdicion ? hospitalExistente.nombre    : "", "Nombre del hospital");
+        TextField txtDireccion = FormularioUtils.campoTexto(esEdicion ? hospitalExistente.direccion : "", "Dirección física");
+        TextField txtTelefono  = FormularioUtils.campoTexto(esEdicion ? hospitalExistente.telefono  : "", "Ej: (601) 000-0000");
 
         ComboBox<CiudadModel> cmbCiudad = comboCiudades();
         if (esEdicion) preseleccionarCiudad(cmbCiudad, hospitalExistente.codigoCiudad);
@@ -85,19 +83,21 @@ public class HospitalFormDialog {
                 : "Activo";
         ComboBox<String> cmbEstado = comboEstado(estadoInicial);
 
-        Label lblErrores = errorLabel();
+        Label lblErrores = FormularioUtils.crearErrorLabel();
 
-        GridPane grid = formularioGrid();
+        GridPane grid = FormularioUtils.formularioGrid(110);
         int fila = 0;
-        agregarFila(grid, fila++, "Nombre",    txtNombre);
-        agregarFila(grid, fila++, "Dirección", txtDireccion);
-        agregarFila(grid, fila++, "Teléfono",  txtTelefono);
-        agregarFila(grid, fila++, "Ciudad",    cmbCiudad);
-        agregarFila(grid, fila++, "Estado",    cmbEstado);
+        FormularioUtils.agregarFila(grid, fila++, "Nombre",    txtNombre);
+        FormularioUtils.agregarFila(grid, fila++, "Dirección", txtDireccion);
+        FormularioUtils.agregarFila(grid, fila++, "Teléfono",  txtTelefono);
+        FormularioUtils.agregarFila(grid, fila++, "Ciudad",    cmbCiudad);
+        FormularioUtils.agregarFila(grid, fila++, "Estado",    cmbEstado);
         grid.add(lblErrores, 0, fila, 2, 1);
 
+        // Sin setPrefSize: que el diálogo calcule su altura según el contenido,
+        // para que los botones nunca queden ocultos al expandirse el label de errores.
         dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().setPrefSize(520, 450);
+        dialog.getDialogPane().setMinWidth(FormularioUtils.ANCHO_MIN_DIALOGO);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK))
                 .setText(esEdicion ? "Guardar cambios" : "Crear hospital");
@@ -106,7 +106,11 @@ public class HospitalFormDialog {
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
             String resto = validarCamposComunes(txtNombre, txtTelefono, txtDireccion, cmbCiudad, cmbEstado);
-            if (resto != null) { mostrarErrores(lblErrores, resto); ev.consume(); }
+            if (resto != null) {
+                FormularioUtils.mostrarErrores(lblErrores, resto);
+                dialog.getDialogPane().getScene().getWindow().sizeToScene();
+                ev.consume();
+            }
         });
 
         dialog.setResultConverter(btn -> {
@@ -124,7 +128,7 @@ public class HospitalFormDialog {
                     ciudad.getCodigo(), activo);
         });
 
-        cargarEstilos(dialog);
+        FormularioUtils.aplicarEstilos(dialog, "/styles/hospital/hospital.css");
         dialog.showAndWait().ifPresent(onGuardar);
     }
 
@@ -142,17 +146,20 @@ public class HospitalFormDialog {
         String e;
 
         e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
+        if (e == null) e = Validacion.longitudMin("Nombre", Validacion.texto(txtNombre), 3);
         if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 50);
         Validacion.marcarInvalido(txtNombre, e != null);
         if (e != null) sb.append(e).append("\n");
 
         e = Validacion.requerido("Teléfono", Validacion.texto(txtTelefono));
         if (e == null) e = Validacion.formatoTelefono(Validacion.texto(txtTelefono));
+        if (e == null) e = Validacion.minDigitos("Teléfono", Validacion.texto(txtTelefono), 7);
         if (e == null) e = Validacion.longitudMax("Teléfono", Validacion.texto(txtTelefono), 20);
         Validacion.marcarInvalido(txtTelefono, e != null);
         if (e != null) sb.append(e).append("\n");
 
         e = Validacion.requerido("Dirección", Validacion.texto(txtDireccion));
+        if (e == null) e = Validacion.longitudMin("Dirección", Validacion.texto(txtDireccion), 5);
         if (e == null) e = Validacion.longitudMax("Dirección", Validacion.texto(txtDireccion), 150);
         Validacion.marcarInvalido(txtDireccion, e != null);
         if (e != null) sb.append(e).append("\n");
@@ -182,20 +189,6 @@ public class HospitalFormDialog {
                 .ifPresent(cmb::setValue);
     }
 
-    /**
-     * Crea un {@link TextField} estilizado con valor inicial y texto de ayuda.
-     *
-     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía
-     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío
-     */
-    private TextField campoTexto(String inicial, String prompt) {
-        TextField tf = new TextField(inicial == null ? "" : inicial);
-        tf.setPromptText(prompt);
-        tf.getStyleClass().add("campo-form");
-        tf.setPrefHeight(36);
-        return tf;
-    }
-
     /** Crea el combo de ciudades precargado con la lista del controlador. */
     private ComboBox<CiudadModel> comboCiudades() {
         ComboBox<CiudadModel> cmb = new ComboBox<>();
@@ -222,58 +215,4 @@ public class HospitalFormDialog {
         return cmb;
     }
 
-    /** Crea el {@link GridPane} base del formulario con dos columnas (etiqueta / control). */
-    private GridPane formularioGrid() {
-        GridPane grid = new GridPane();
-        grid.setHgap(14); grid.setVgap(14);
-        grid.setPadding(new Insets(22, 24, 18, 24));
-        ColumnConstraints c0 = new ColumnConstraints();
-        c0.setMinWidth(110); c0.setHalignment(HPos.RIGHT);
-        ColumnConstraints c1 = new ColumnConstraints();
-        c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
-        grid.getColumnConstraints().addAll(c0, c1);
-        return grid;
-    }
-
-    /**
-     * Añade una fila de etiqueta + control al grid del formulario.
-     *
-     * @param grid     Grid destino
-     * @param fila     Índice de fila donde insertar
-     * @param etiqueta Texto de la etiqueta descriptiva
-     * @param control  Control de entrada (TextField, ComboBox, etc.)
-     */
-    private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
-        Label lbl = new Label(etiqueta);
-        lbl.getStyleClass().add("etiqueta-form");
-        grid.add(lbl, 0, fila);
-        grid.add(control, 1, fila);
-        if (control instanceof Region r) GridPane.setHgrow(r, Priority.ALWAYS);
-    }
-
-    /** Crea el {@link Label} de errores, inicialmente oculto y sin espacio en el layout. */
-    private Label errorLabel() {
-        Label l = new Label();
-        l.getStyleClass().add("errores-form");
-        l.setVisible(false); l.setManaged(false);
-        l.setWrapText(true);
-        return l;
-    }
-
-    /**
-     * Hace visible el label de errores y muestra el mensaje indicado.
-     *
-     * @param lbl     Label de errores creado con {@link #errorLabel()}
-     * @param mensaje Texto de error a mostrar
-     */
-    private void mostrarErrores(Label lbl, String mensaje) {
-        lbl.setText(mensaje);
-        lbl.setVisible(true); lbl.setManaged(true);
-    }
-
-    /** Aplica la hoja de estilos del módulo hospital al panel del diálogo. */
-    private void cargarEstilos(Dialog<?> dialog) {
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/styles/hospital/hospital.css").toExternalForm());
-    }
 }

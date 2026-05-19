@@ -1,10 +1,8 @@
 package views.hospital;
 
 import controllers.AreaInternaController.TipoArea;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.GridPane;
 import models.AreaInternaModel;
 import services.HospitalService;
 import views.common.Validacion;
@@ -75,25 +73,27 @@ public class AreaFormDialog {
         // En modo creación el código se genera automáticamente; no se le pide al usuario.
         final String codigoGenerado = (!esEdicion && generarCodigo != null) ? generarCodigo.get() : null;
 
-        TextField txtNombre      = campoTexto(esEdicion ? areaExistente.nombre : "", "Nombre del área");
-        TextField txtDescripcion = campoTexto(
+        TextField txtNombre      = FormularioUtils.campoTexto(esEdicion ? areaExistente.nombre : "", "Nombre del área");
+        TextField txtDescripcion = FormularioUtils.campoTexto(
                 esEdicion && areaExistente.descripcion != null ? areaExistente.descripcion : "",
                 "Descripción (opcional)");
 
         ComboBox<TipoArea> cmbTipo = comboTipos();
         if (esEdicion) preseleccionarTipo(cmbTipo, areaExistente.codigoAreaInterna);
 
-        Label lblErrores = errorLabel();
+        Label lblErrores = FormularioUtils.crearErrorLabel();
 
-        GridPane grid = formularioGrid();
+        GridPane grid = FormularioUtils.formularioGrid(130);
         int fila = 0;
-        agregarFila(grid, fila++, "Nombre",      txtNombre);
-        agregarFila(grid, fila++, "Descripción", txtDescripcion);
-        agregarFila(grid, fila++, "Tipo",        cmbTipo);
+        FormularioUtils.agregarFila(grid, fila++, "Nombre",      txtNombre);
+        FormularioUtils.agregarFila(grid, fila++, "Descripción", txtDescripcion);
+        FormularioUtils.agregarFila(grid, fila++, "Tipo",        cmbTipo);
         grid.add(lblErrores, 0, fila, 2, 1);
 
+        // Sin setPrefSize: el diálogo se ajusta a su contenido, evitando que
+        // los botones inferiores se oculten al expandirse el label de errores.
         dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().setPrefSize(520, 380);
+        dialog.getDialogPane().setMinWidth(FormularioUtils.ANCHO_MIN_DIALOGO);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         ((Button) dialog.getDialogPane().lookupButton(ButtonType.OK))
                 .setText(esEdicion ? "Guardar Área" : "Crear área");
@@ -102,7 +102,11 @@ public class AreaFormDialog {
         Button btnOk = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         btnOk.addEventFilter(javafx.event.ActionEvent.ACTION, ev -> {
             String resto = validarCamposComunes(txtNombre, txtDescripcion, cmbTipo);
-            if (resto != null) { mostrarErrores(lblErrores, resto); ev.consume(); }
+            if (resto != null) {
+                FormularioUtils.mostrarErrores(lblErrores, resto);
+                dialog.getDialogPane().getScene().getWindow().sizeToScene();
+                ev.consume();
+            }
         });
 
         dialog.setResultConverter(btn -> {
@@ -118,7 +122,7 @@ public class AreaFormDialog {
                     Validacion.texto(txtDescripcion), codigoTipo);
         });
 
-        cargarEstilos(dialog);
+        FormularioUtils.aplicarEstilos(dialog, "/styles/hospital/hospitalDetalle.css");
         dialog.showAndWait().ifPresent(onGuardar);
     }
 
@@ -134,6 +138,7 @@ public class AreaFormDialog {
         String e;
 
         e = Validacion.requerido("Nombre", Validacion.texto(txtNombre));
+        if (e == null) e = Validacion.longitudMin("Nombre", Validacion.texto(txtNombre), 2);
         if (e == null) e = Validacion.longitudMax("Nombre", Validacion.texto(txtNombre), 100);
         Validacion.marcarInvalido(txtNombre, e != null);
         if (e != null) sb.append(e).append("\n");
@@ -163,20 +168,6 @@ public class AreaFormDialog {
                 .ifPresent(cmb::setValue);
     }
 
-    /**
-     * Crea un {@link TextField} estilizado con valor inicial y texto de ayuda.
-     *
-     * @param inicial Valor inicial del campo; si es {@code null} se usa cadena vacía
-     * @param prompt  Texto descriptivo mostrado cuando el campo está vacío
-     */
-    private TextField campoTexto(String inicial, String prompt) {
-        TextField tf = new TextField(inicial == null ? "" : inicial);
-        tf.setPromptText(prompt);
-        tf.getStyleClass().add("campo-form");
-        tf.setPrefHeight(36);
-        return tf;
-    }
-
     /** Crea el combo de tipos de área precargado con los disponibles del sistema. */
     private ComboBox<TipoArea> comboTipos() {
         ComboBox<TipoArea> cmb = new ComboBox<>();
@@ -188,58 +179,4 @@ public class AreaFormDialog {
         return cmb;
     }
 
-    /** Crea el {@link GridPane} base del formulario con dos columnas (etiqueta / control). */
-    private GridPane formularioGrid() {
-        GridPane grid = new GridPane();
-        grid.setHgap(14); grid.setVgap(14);
-        grid.setPadding(new Insets(22, 24, 18, 24));
-        ColumnConstraints c0 = new ColumnConstraints();
-        c0.setMinWidth(130); c0.setHalignment(HPos.RIGHT);
-        ColumnConstraints c1 = new ColumnConstraints();
-        c1.setHgrow(Priority.ALWAYS); c1.setFillWidth(true);
-        grid.getColumnConstraints().addAll(c0, c1);
-        return grid;
-    }
-
-    /**
-     * Añade una fila de etiqueta + control al grid del formulario.
-     *
-     * @param grid     Grid destino
-     * @param fila     Índice de fila donde insertar
-     * @param etiqueta Texto de la etiqueta descriptiva
-     * @param control  Control de entrada (TextField, ComboBox, etc.)
-     */
-    private void agregarFila(GridPane grid, int fila, String etiqueta, javafx.scene.Node control) {
-        Label lbl = new Label(etiqueta);
-        lbl.getStyleClass().add("etiqueta-form");
-        grid.add(lbl, 0, fila);
-        grid.add(control, 1, fila);
-        if (control instanceof Region r) GridPane.setHgrow(r, Priority.ALWAYS);
-    }
-
-    /** Crea el {@link Label} de errores, inicialmente oculto y sin espacio en el layout. */
-    private Label errorLabel() {
-        Label l = new Label();
-        l.getStyleClass().add("errores-form");
-        l.setVisible(false); l.setManaged(false);
-        l.setWrapText(true);
-        return l;
-    }
-
-    /**
-     * Hace visible el label de errores y muestra el mensaje indicado.
-     *
-     * @param lbl     Label de errores creado con {@link #errorLabel()}
-     * @param mensaje Texto de error a mostrar
-     */
-    private void mostrarErrores(Label lbl, String mensaje) {
-        lbl.setText(mensaje);
-        lbl.setVisible(true); lbl.setManaged(true);
-    }
-
-    /** Aplica la hoja de estilos del módulo hospital al panel del diálogo. */
-    private void cargarEstilos(Dialog<?> dialog) {
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/styles/hospital/hospitalDetalle.css").toExternalForm());
-    }
 }

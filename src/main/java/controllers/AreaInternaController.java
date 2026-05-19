@@ -6,11 +6,15 @@ import models.HospitalModel;
 import services.HospitalService;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Controlador de las áreas internas de un hospital específico.
@@ -27,7 +31,7 @@ import java.util.function.Consumer;
 public class AreaInternaController {
 
     /** Prefijo utilizado para generar nuevos códigos de área interna. */
-    private static final String PREFIJO_CODIGO = "AI";
+    private static final String PREFIJO_CODIGO = "HAI";
 
     /** Servicio HTTP que comunica con el backend. */
     private final HospitalService service = HospitalService.getInstance();
@@ -37,6 +41,17 @@ public class AreaInternaController {
 
     /** Lista completa de áreas cargadas para este hospital. */
     private List<AreaInternaModel> todas = new ArrayList<>();
+
+    /**
+     * Conjunto de códigos de área usados por cualquier hospital del sistema.
+     *
+     * <p>El backend define {@code hospital_area_interna.codigo} como clave
+     * primaria global, por lo que dos hospitales no pueden compartir el
+     * mismo código de área. Esta caché se llena al cargar los tipos
+     * disponibles y se utiliza para evitar colisiones al generar nuevos
+     * códigos.</p>
+     */
+    private Set<String> codigosGlobales = new HashSet<>();
 
     /** Callback disparado cuando la lista se carga o recarga exitosamente. */
     private Consumer<List<AreaInternaModel>> onDatosActualizados;
@@ -113,8 +128,14 @@ public class AreaInternaController {
     public void cargarTiposDisponibles(Consumer<List<TipoArea>> onListo) {
         service.getAllHospitals()
                 .thenCompose(this::recolectarAreasDeTodos)
-                .thenAccept(areas -> Platform.runLater(() ->
-                        onListo.accept(tiposUnicos(areas))))
+                .thenAccept(areas -> Platform.runLater(() -> {
+                    codigosGlobales = areas.stream()
+                            .map(a -> a.codigo)
+                            .filter(c -> c != null && !c.isBlank())
+                            .map(c -> c.toUpperCase(Locale.ROOT))
+                            .collect(Collectors.toCollection(HashSet::new));
+                    onListo.accept(tiposUnicos(areas));
+                }))
                 .exceptionally(e -> {
                     Platform.runLater(() ->
                             notificarError("No se pudieron cargar los tipos de área."));
@@ -160,6 +181,9 @@ public class AreaInternaController {
     public void crear(HospitalService.AreaCreateBody body, String nombre) {
         service.crearArea(codigoHospital, body)
                 .thenAccept(a -> Platform.runLater(() -> {
+                    if (a != null && a.codigo != null && !a.codigo.isBlank()) {
+                        codigosGlobales.add(a.codigo.toUpperCase(Locale.ROOT));
+                    }
                     if (onExito != null)
                         onExito.accept("Área '" + nombre + "' creada correctamente");
                     cargarAreas();
@@ -191,13 +215,19 @@ public class AreaInternaController {
     }
 
     /**
-     * Genera el siguiente código disponible con formato {@code AI###}.
-     * Incrementa el contador hasta encontrar uno que no exista en la lista local.
+     * Genera el siguiente código disponible con formato {@code HAI###}.
      *
-     * @return Código listo para usar, p. ej. {@code AI003}
+     * <p>El código del área es clave primaria global en el backend
+     * ({@code hospital_area_interna.codigo}), por lo que se verifica
+     * contra los códigos del hospital actual y contra los códigos
+     * usados por cualquier otro hospital del sistema. Esto evita que
+     * un código generado para un hospital sobrescriba el área de otro
+     * hospital al persistirse.</p>
+     *
+     * @return Código listo para usar, p. ej. {@code HAI003}
      */
     public String generarCodigo() {
-        int n = todas.size() + 1;
+        int n = Math.max(todas.size(), codigosGlobales.size()) + 1;
         String candidato = String.format("%s%03d", PREFIJO_CODIGO, n);
         while (codigoYaExiste(candidato)) {
             n++;
@@ -207,13 +237,16 @@ public class AreaInternaController {
     }
 
     /**
-     * Indica si el código ya está en uso en la lista local.
+     * Indica si el código ya está en uso, tanto en la lista local del
+     * hospital actual como en la caché global de códigos del sistema.
      *
      * @param codigo Código a verificar (ignorando mayúsculas/minúsculas)
      * @return {@code true} si ya existe; {@code false} en caso contrario
      */
     public boolean codigoYaExiste(String codigo) {
         if (codigo == null || codigo.isBlank()) return false;
+        String normalizado = codigo.toUpperCase(Locale.ROOT);
+        if (codigosGlobales.contains(normalizado)) return true;
         return todas.stream().anyMatch(a -> codigo.equalsIgnoreCase(a.codigo));
     }
 
