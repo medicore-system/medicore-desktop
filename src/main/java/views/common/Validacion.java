@@ -134,16 +134,44 @@ public final class Validacion {
      */
     public static String numeroPositivo(String etiqueta, String valor) {
         if (valor == null || valor.isBlank()) return null;
-        String limpio = valor.replace(".", "").replace(",", "").trim();
-        if (!limpio.matches("\\d+")) {
+
+        String texto = valor.trim();
+
+        /*
+         * Acepta:
+         * 80000
+         * 80.000
+         * 80,000
+         *
+         * No acepta:
+         * 0
+         * -1
+         * 80.00
+         * 80,50
+         * $80000
+         * abc
+         */
+        boolean formatoValido = texto.matches("\\d+")
+                || texto.matches("\\d{1,3}(\\.\\d{3})+")
+                || texto.matches("\\d{1,3}(,\\d{3})+");
+
+        if (!formatoValido) {
             return "• " + etiqueta + " debe ser un número entero positivo";
         }
+
+        String limpio = texto.replace(".", "").replace(",", "");
+
         try {
             long n = Long.parseLong(limpio);
-            if (n < 0) return "• " + etiqueta + " no puede ser negativo";
+
+            if (n <= 0) {
+                return "• " + etiqueta + " debe ser mayor que 0";
+            }
+
         } catch (NumberFormatException e) {
             return "• " + etiqueta + " no es un número válido";
         }
+
         return null;
     }
 
