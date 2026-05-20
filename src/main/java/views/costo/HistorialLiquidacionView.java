@@ -11,6 +11,10 @@ import models.FacturaResumenModel;
 import models.LiquidacionResponse;
 import views.common.PrecioFormato;
 
+import javafx.scene.layout.HBox;
+import javafx.stage.FileChooser;
+import java.io.File;
+
 public class HistorialLiquidacionView extends VBox {
 
   private final HistorialLiquidacionController controller = new HistorialLiquidacionController();
@@ -54,18 +58,37 @@ public class HistorialLiquidacionView extends VBox {
     colEstado.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getEstado()));
     colEstado.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
 
-    TableColumn<LiquidacionResponse, Void> colAccion = new TableColumn<>("Acción");
+    TableColumn<LiquidacionResponse, Void> colAccion = new TableColumn<>("Acciones");
+    colAccion.setMinWidth(180);
     colAccion.setCellFactory(param -> new TableCell<>() {
       private final Button btnPagar = new Button("Conciliar");
+      private final Button btnPdf = new Button("PDF");
       private final Label lblPagado = new Label("Pagada");
+
       {
         btnPagar
             .setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 11px;");
+        btnPdf.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 11px;");
         lblPagado.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
 
         btnPagar.setOnAction(event -> {
           LiquidacionResponse liq = getTableView().getItems().get(getIndex());
           controller.marcarComoPagada(liq.getCodigo());
+        });
+
+        btnPdf.setOnAction(event -> {
+          LiquidacionResponse liq = getTableView().getItems().get(getIndex());
+
+          // Abrir la ventana de Guardar Archivo de Windows/Mac
+          FileChooser fileChooser = new FileChooser();
+          fileChooser.setTitle("Guardar Cuenta de Cobro");
+          fileChooser.setInitialFileName("Liquidacion_" + liq.getCodigo() + ".pdf");
+          fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivos PDF", "*.pdf"));
+
+          File file = fileChooser.showSaveDialog(getScene().getWindow());
+          if (file != null) {
+            controller.descargarYGuardarPdf(liq.getCodigo(), file);
+          }
         });
       }
 
@@ -76,16 +99,21 @@ public class HistorialLiquidacionView extends VBox {
           setGraphic(null);
         } else {
           LiquidacionResponse liq = getTableView().getItems().get(getIndex());
+          HBox caja = new HBox(10);
+          caja.setStyle("-fx-alignment: CENTER;");
+
           if ("PENDIENTE".equals(liq.getEstado())) {
-            setGraphic(btnPagar);
+            caja.getChildren().addAll(btnPagar, btnPdf);
           } else {
-            setGraphic(lblPagado);
+            caja.getChildren().addAll(lblPagado, btnPdf);
           }
+          setGraphic(caja);
         }
       }
     });
 
     tablaMaestra.getColumns().addAll(colCodigo, colTotal, colEstado, colAccion);
+
   }
 
   private void configurarTablaDetalle() {
@@ -129,6 +157,7 @@ public class HistorialLiquidacionView extends VBox {
     controller.setOnPagoConciliado(() -> {
       views.common.Toast.success(this, "El pago ha sido registrado en bancos y conciliado con éxito.");
     });
+    controller.setOnPdfExito(msg -> views.common.Toast.success(this, msg));
 
     controller
         .setOnError(msg -> new Alert(Alert.AlertType.ERROR, "Error cargando historial: " + msg, ButtonType.OK).show());

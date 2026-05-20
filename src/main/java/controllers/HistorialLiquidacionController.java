@@ -7,6 +7,9 @@ import services.LiquidacionService;
 import java.util.List;
 import java.util.function.Consumer;
 
+import java.io.File;
+import java.nio.file.Files;
+
 public class HistorialLiquidacionController {
 
     private final LiquidacionService service = LiquidacionService.getInstance();
@@ -41,6 +44,31 @@ public class HistorialLiquidacionController {
                         Platform.runLater(() -> onError.accept("Error al procesar pago: " + ex.getMessage()));
                     return null;
                 });
+    }
+
+    private Consumer<String> onPdfExito;
+
+    public void descargarYGuardarPdf(String codigo, File archivoDestino) {
+        service.descargarPdf(codigo)
+                .thenAccept(bytes -> Platform.runLater(() -> {
+                    try {
+                        Files.write(archivoDestino.toPath(), bytes);
+                        if (onPdfExito != null)
+                            onPdfExito.accept("PDF guardado correctamente en: " + archivoDestino.getName());
+                    } catch (Exception e) {
+                        if (onError != null)
+                            onError.accept("No se pudo guardar el archivo: " + e.getMessage());
+                    }
+                }))
+                .exceptionally(ex -> {
+                    if (onError != null)
+                        Platform.runLater(() -> onError.accept("Error descargando el PDF: " + ex.getMessage()));
+                    return null;
+                });
+    }
+
+    public void setOnPdfExito(Consumer<String> cb) {
+        this.onPdfExito = cb;
     }
 
     public void setOnPagoConciliado(Runnable cb) {

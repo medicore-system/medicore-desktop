@@ -4,6 +4,10 @@ import models.LiquidacionRequest;
 import models.LiquidacionResponse;
 import services.http.HttpServiceImpl;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -45,11 +49,21 @@ public class LiquidacionService extends HttpServiceImpl<LiquidacionRequest, Stri
 
   public CompletableFuture<String> conciliarPago(String codigo) {
     java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-        .uri(java.net.URI.create(BASE_URL + "/" +codigo + "/estado?nuevoEstado=PAGADA"))
+        .uri(java.net.URI.create(BASE_URL + "/" + codigo + "/estado?nuevoEstado=PAGADA"))
         .header("Content-Type", "application/json")
         .PUT(java.net.http.HttpRequest.BodyPublishers.noBody())
         .build();
     return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
         .thenApply(java.net.http.HttpResponse::body);
+  }
+
+  public CompletableFuture<byte[]> descargarPdf(String codigo) {
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(BASE_URL + "/" + codigo + "/pdf"))
+        .GET()
+        .build();
+
+    return client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+        .thenApply(HttpResponse::body);
   }
 }
