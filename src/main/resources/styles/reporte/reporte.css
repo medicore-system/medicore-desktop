@@ -1,0 +1,59 @@
+/* Estilos para los Dashboards Gerenciales */
+.contenedor-principal {
+    -fx-background-color: #f4f6f9;
+}
+
+.titulo {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+/* Barra de Filtros superior */
+.barra-filtros {
+    -fx-background-color: white;
+    -fx-padding: 12 20 12 20;
+    -fx-background-radius: 8;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);
+}
+
+.button-primario {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+.button-primario:hover { -fx-background-color: #2980b9; }
+
+/* Estilizar las Pestañas (Tabs) */
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
+}
+.tab-pane .tab {
+    -fx-background-color: #ecf0f1;
+    -fx-background-radius: 5 5 0 0;
+    -fx-padding: 5 20 5 20;
+    -fx-cursor: hand;
+}
+.tab-pane .tab:selected {
+    -fx-background-color: white;
+    -fx-border-color: #3498db transparent transparent transparent;
+    -fx-border-width: 3 0 0 0; /* Raya azul superior para la pestaña activa */
+}
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #2c3e50;
+    -fx-font-weight: bold;
+}
+
+/* Tarjetas de Gráficos Blancas y Limpias */
+.chart {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-padding: 10;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 8, 0, 0, 2);
+}
