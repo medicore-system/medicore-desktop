@@ -15,148 +15,152 @@ import java.io.File;
 
 public class CajaView extends VBox {
 
-    private final CajaController controller = new CajaController();
-    
-    private final TextField txtBuscarDoc = new TextField();
-    private final TableView<FacturaCajaModel> tablaCaja = new TableView<>();
-    
-    // Panel de Detalles
-    private final Label lblSubtotal = new Label("$0.00");
-    private final Label lblAporteEps = new Label("-$0.00");
-    private final Label lblTotalPagar = new Label("$0.00");
-    private final Button btnPagar = new Button("💸 Registrar Pago y Generar Recibo");
+  private final CajaController controller = new CajaController();
 
-    public CajaView() {
-        setSpacing(20);
-        setPadding(new Insets(20));
-        getStyleClass().add("contenedor-principal");
+  private final TextField txtBuscarDoc = new TextField();
+  private final TableView<FacturaCajaModel> tablaCaja = new TableView<>();
 
-        Label titulo = new Label("Caja y Facturación a Pacientes (B2C)");
-        titulo.getStyleClass().add("titulo");
+  // Panel de Detalles
+  private final Label lblSubtotal = new Label("$0.00");
+  private final Label lblAporteEps = new Label("-$0.00");
+  private final Label lblTotalPagar = new Label("$0.00");
+  private final Button btnPagar = new Button("💸 Registrar Pago y Generar Recibo");
 
-        HBox buscador = crearBuscador();
-        configurarTabla();
-        VBox panelPago = crearPanelPago();
+  public CajaView() {
+    getStylesheets().add(getClass().getResource("/styles/caja/caja.css").toExternalForm());
+    setSpacing(20);
+    setPadding(new Insets(20));
+    getStyleClass().add("contenedor-principal");
 
-        getChildren().addAll(titulo, buscador, tablaCaja, panelPago);
-        VBox.setVgrow(tablaCaja, Priority.ALWAYS);
+    Label titulo = new Label("Caja y Facturación a Pacientes (B2C)");
+    titulo.getStyleClass().add("titulo");
 
-        registrarEventos();
-        conectarController();
-    }
+    HBox buscador = crearBuscador();
+    configurarTabla();
+    VBox panelPago = crearPanelPago();
 
-    private HBox crearBuscador() {
-        HBox box = new HBox(10);
-        box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-        
-        txtBuscarDoc.setPromptText("Ingrese Documento del Paciente...");
-        txtBuscarDoc.setPrefWidth(250);
-        
-        Button btnBuscar = new Button("🔍 Buscar Facturas");
-        btnBuscar.getStyleClass().add("button-primario");
-        btnBuscar.setOnAction(e -> controller.buscarFacturas(txtBuscarDoc.getText()));
+    getChildren().addAll(titulo, buscador, tablaCaja, panelPago);
+    VBox.setVgrow(tablaCaja, Priority.ALWAYS);
 
-        box.getChildren().addAll(new Label("Cédula Paciente:"), txtBuscarDoc, btnBuscar);
-        return box;
-    }
+    registrarEventos();
+    conectarController();
+  }
 
-    private void configurarTabla() {
-        tablaCaja.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tablaCaja.setPlaceholder(new Label("Busque un paciente para ver sus facturas pendientes de pago."));
+  private HBox crearBuscador() {
+    HBox box = new HBox(10);
+    box.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        TableColumn<FacturaCajaModel, String> colFac = new TableColumn<>("Factura N°");
-        colFac.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCodigoFactura()));
+    txtBuscarDoc.setPromptText("Ingrese Documento del Paciente...");
+    txtBuscarDoc.setPrefWidth(250);
 
-        TableColumn<FacturaCajaModel, String> colFecha = new TableColumn<>("Fecha");
-        colFecha.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getFechaFormateada()));
+    Button btnBuscar = new Button("🔍 Buscar Facturas");
+    btnBuscar.getStyleClass().add("button-primario");
+    btnBuscar.setOnAction(e -> controller.buscarFacturas(txtBuscarDoc.getText()));
 
-        TableColumn<FacturaCajaModel, String> colDesc = new TableColumn<>("Servicio Médico");
-        colDesc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDescripcionServicio()));
+    box.getChildren().addAll(new Label("Cédula Paciente:"), txtBuscarDoc, btnBuscar);
+    return box;
+  }
 
-        TableColumn<FacturaCajaModel, String> colEps = new TableColumn<>("Convenio EPS");
-        colEps.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNombreEps()));
+  private void configurarTabla() {
+    tablaCaja.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    tablaCaja.setPlaceholder(new Label("Busque un paciente para ver sus facturas pendientes de pago."));
 
-        tablaCaja.getColumns().addAll(colFac, colFecha, colDesc, colEps);
-    }
+    TableColumn<FacturaCajaModel, String> colFac = new TableColumn<>("Factura N°");
+    colFac.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCodigoFactura()));
 
-    private VBox crearPanelPago() {
-        VBox panel = new VBox(10);
-        panel.setPadding(new Insets(15));
-        panel.setStyle("-fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-color: #ecf0f1;");
-        
-        Label tituloPanel = new Label("Detalle Financiero de la Factura Seleccionada");
-        tituloPanel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+    TableColumn<FacturaCajaModel, String> colFecha = new TableColumn<>("Fecha");
+    colFecha.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getFechaFormateada()));
 
-        lblSubtotal.setStyle("-fx-font-size: 14px;");
-        lblAporteEps.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 14px;");
-        lblTotalPagar.setStyle("-fx-font-weight: bold; -fx-font-size: 18px; -fx-text-fill: #c0392b;");
-        
-        btnPagar.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;");
-        btnPagar.setDisable(true); // Deshabilitado hasta que seleccionen algo
+    TableColumn<FacturaCajaModel, String> colDesc = new TableColumn<>("Servicio Médico");
+    colDesc.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDescripcionServicio()));
 
-        GridPane grid = new GridPane();
-        grid.setHgap(20);
-        grid.setVgap(10);
-        grid.add(new Label("Subtotal del Servicio:"), 0, 0); grid.add(lblSubtotal, 1, 0);
-        grid.add(new Label("Cobertura Asumida por EPS:"), 0, 1); grid.add(lblAporteEps, 1, 1);
-        grid.add(new Label("VALOR A COBRAR AL PACIENTE:"), 0, 2); grid.add(lblTotalPagar, 1, 2);
+    TableColumn<FacturaCajaModel, String> colEps = new TableColumn<>("Convenio EPS");
+    colEps.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNombreEps()));
 
-        panel.getChildren().addAll(tituloPanel, grid, btnPagar);
-        return panel;
-    }
+    tablaCaja.getColumns().addAll(colFac, colFecha, colDesc, colEps);
+  }
 
-    private void registrarEventos() {
-        tablaCaja.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-            if (newSel != null) {
-                lblSubtotal.setText(PrecioFormato.formatear(newSel.getCostoTotal()));
-                lblAporteEps.setText("-" + PrecioFormato.formatear(newSel.getCoberturaEps()));
-                lblTotalPagar.setText(PrecioFormato.formatear(newSel.getCopagoAPagar()));
-                btnPagar.setDisable(false);
-            } else {
-                lblSubtotal.setText("$0.00");
-                lblAporteEps.setText("-$0.00");
-                lblTotalPagar.setText("$0.00");
-                btnPagar.setDisable(true);
-            }
-        });
+  private VBox crearPanelPago() {
+    VBox panel = new VBox(10);
+    panel.setPadding(new Insets(15));
+    panel.getStyleClass().add("panel-pago");
 
-        btnPagar.setOnAction(e -> {
-            FacturaCajaModel seleccionada = tablaCaja.getSelectionModel().getSelectedItem();
-            if (seleccionada != null) {
-                FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Guardar Recibo de Caja");
-                fileChooser.setInitialFileName("Recibo_Caja_" + seleccionada.getCodigoFactura() + ".pdf");
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivos PDF", "*.pdf"));
+    Label tituloPanel = new Label("Detalle Financiero de la Factura Seleccionada");
+    tituloPanel.getStyleClass().add("titulo-panel");
 
-                File file = fileChooser.showSaveDialog(getScene().getWindow());
-                if (file != null) {
-                    btnPagar.setDisable(true);
-                    btnPagar.setText("Procesando pago...");
-                    controller.pagarYGenerarRecibo(seleccionada.getCodigoFactura(), file);
-                }
-            }
-        });
-    }
+    lblSubtotal.getStyleClass().add("label-subtotal");
+    lblAporteEps.getStyleClass().add("label-aporte");
+    lblTotalPagar.getStyleClass().add("label-total-pagar");
 
-    private void conectarController() {
-        controller.setOnBusquedaExitosa(facturas -> {
-            tablaCaja.setItems(FXCollections.observableArrayList(facturas));
-            if (facturas.isEmpty()) {
-                Toast.info(this, "El paciente no tiene facturas pendientes de pago.");
-            }
-        });
+    btnPagar.getStyleClass().add("button-pagar");
+    btnPagar.setDisable(true);
 
-        controller.setOnPagoExitoso(msg -> {
-            Toast.success(this, msg);
-            btnPagar.setText("Registrar Pago y Generar Recibo");
-            controller.buscarFacturas(txtBuscarDoc.getText());
-        });
+    GridPane grid = new GridPane();
+    grid.setHgap(20);
+    grid.setVgap(10);
+    grid.add(new Label("Subtotal del Servicio:"), 0, 0);
+    grid.add(lblSubtotal, 1, 0);
+    grid.add(new Label("Cobertura Asumida por EPS:"), 0, 1);
+    grid.add(lblAporteEps, 1, 1);
+    grid.add(new Label("VALOR A COBRAR AL PACIENTE:"), 0, 2);
+    grid.add(lblTotalPagar, 1, 2);
 
-        controller.setOnError(msg -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-            alert.showAndWait();
-            btnPagar.setDisable(false);
-            btnPagar.setText("Registrar Pago y Generar Recibo");
-        });
-    }
+    panel.getChildren().addAll(tituloPanel, grid, btnPagar);
+    return panel;
+  }
+
+  private void registrarEventos() {
+    tablaCaja.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+      if (newSel != null) {
+        lblSubtotal.setText(PrecioFormato.formatear(newSel.getCostoTotal()));
+        lblAporteEps.setText("-" + PrecioFormato.formatear(newSel.getCoberturaEps()));
+        lblTotalPagar.setText(PrecioFormato.formatear(newSel.getCopagoAPagar()));
+        btnPagar.setDisable(false);
+      } else {
+        lblSubtotal.setText("$0.00");
+        lblAporteEps.setText("-$0.00");
+        lblTotalPagar.setText("$0.00");
+        btnPagar.setDisable(true);
+      }
+    });
+
+    btnPagar.setOnAction(e -> {
+      FacturaCajaModel seleccionada = tablaCaja.getSelectionModel().getSelectedItem();
+      if (seleccionada != null) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Guardar Recibo de Caja");
+        fileChooser.setInitialFileName("Recibo_Caja_" + seleccionada.getCodigoFactura() + ".pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Archivos PDF", "*.pdf"));
+
+        File file = fileChooser.showSaveDialog(getScene().getWindow());
+        if (file != null) {
+          btnPagar.setDisable(true);
+          btnPagar.setText("Procesando pago...");
+          controller.pagarYGenerarRecibo(seleccionada.getCodigoFactura(), file);
+        }
+      }
+    });
+  }
+
+  private void conectarController() {
+    controller.setOnBusquedaExitosa(facturas -> {
+      tablaCaja.setItems(FXCollections.observableArrayList(facturas));
+      if (facturas.isEmpty()) {
+        Toast.info(this, "El paciente no tiene facturas pendientes de pago.");
+      }
+    });
+
+    controller.setOnPagoExitoso(msg -> {
+      Toast.success(this, msg);
+      btnPagar.setText("Registrar Pago y Generar Recibo");
+      controller.buscarFacturas(txtBuscarDoc.getText());
+    });
+
+    controller.setOnError(msg -> {
+      Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
+      alert.showAndWait();
+      btnPagar.setDisable(false);
+      btnPagar.setText("Registrar Pago y Generar Recibo");
+    });
+  }
 }

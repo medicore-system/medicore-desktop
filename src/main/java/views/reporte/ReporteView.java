@@ -26,6 +26,8 @@ public class ReporteView extends VBox {
     private final ComboBox<Integer> cmbMes = new ComboBox<>();
 
     public ReporteView() {
+        getStylesheets().add(getClass().getResource("/styles/reporte/reporte.css").toExternalForm());
+
         setSpacing(10);
         setPadding(new Insets(20));
         getStyleClass().add("contenedor-principal");
@@ -45,6 +47,7 @@ public class ReporteView extends VBox {
         barHospital.setTitle("Ingresos Totales por Sede/Hospital");
 
         HBox barraFiltros = new HBox(15);
+        barraFiltros.getStyleClass().add("barra-filtros");
         barraFiltros.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         cmbAnio.getItems().addAll(2023, 2024, 2025, 2026);

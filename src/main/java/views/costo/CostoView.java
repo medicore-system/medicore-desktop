@@ -13,6 +13,8 @@ import javafx.scene.layout.VBox;
 public class CostoView extends VBox {
 
     public CostoView() {
+        getStylesheets().add(getClass().getResource("/styles/liquidacion/liquidacion.css").toExternalForm());
+
         TabPane tabPane = new TabPane();
         tabPane.getStyleClass().add("tab-pane");
 
@@ -30,6 +32,6 @@ public class CostoView extends VBox {
 
         getChildren().add(tabPane);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
-        
+
     }
 }

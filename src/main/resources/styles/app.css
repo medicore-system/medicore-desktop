@@ -1,18 +1,4 @@
-.root {
-    -fx-background-color: #1e1e1e;
-}
 
-.button {
-    -fx-background-color: #3b82f6;
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-padding: 10 20;
-    -fx-background-radius: 10;
-}
-
-.button:hover {
-    -fx-background-color: #2563eb;
-}
 
 /* =========================================================
    Toast notifications - tarjeta moderna con barra lateral
