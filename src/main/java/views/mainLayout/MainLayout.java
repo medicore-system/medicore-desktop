@@ -7,6 +7,7 @@ import views.asignacion.AsignacionView;
 import views.asignacion.asignacionesMedico.AsignacionesMedicoView;
 import views.ciudad.CiudadView;
 import views.costo.CostoView;
+import views.facturacion.CajaView;
 import views.facturacion.FacturacionView;
 import views.hospital.HospitalDetalleView;
 import views.hospital.HospitalView;
@@ -38,7 +39,7 @@ public class MainLayout extends BorderPane {
         Button servicios    = new Button("Servicios");
         Button costos       = new Button("Costos");
         Button reportes     = new Button("Reportes");
-        Button facturacion  = new Button("Facturacion a EPS");
+        Button facturacion  = new Button("Facturacion");
 
         //Asignamos "entiramiento" a los diferentes scenes que aparecen segun donde estemos parados
         ciudades.setOnAction    (e -> {setCenter(new CiudadView());});
@@ -49,7 +50,7 @@ public class MainLayout extends BorderPane {
         servicios.setOnAction   (e -> {setCenter(new ServicioView());});
         costos.setOnAction      (e -> {setCenter(new CostoView());});
         reportes.setOnAction    (e -> {setCenter(new ReporteView());});
-        facturacion.setOnAction (e -> {setCenter(new FacturacionView());});
+        facturacion.setOnAction (e -> {setCenter(new CajaView());});
 
         //Adicionamos los botones al "sidebar" lateral izquierdo
         menu.getChildren().addAll(
