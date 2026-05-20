@@ -21,12 +21,17 @@ public class CostoView extends VBox {
         tabTarifas.setClosable(false);
 
         // Pestaña 2: Aquí pondremos el Generador de Liquidaciones en la Tarea 2
-        Tab tabLiquidaciones = new Tab("Generar Liquidaciones", new VBox() /* Próximamente: new LiquidacionView() */);
+        Tab tabLiquidaciones = new Tab("Generar Liquidaciones", new LiquidacionView());
         tabLiquidaciones.setClosable(false);
 
-        tabPane.getTabs().addAll(tabTarifas, tabLiquidaciones);
+        Tab tabHistorial = new Tab("Historial de Liquidaciones", new HistorialLiquidacionView());
+
+        tabHistorial.setClosable(false);
+
+        tabPane.getTabs().addAll(tabTarifas, tabLiquidaciones, tabHistorial);
 
         getChildren().add(tabPane);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
+        
     }
 }
