@@ -9,9 +9,11 @@ import java.util.regex.Pattern;
 /**
  * Utilidades de validación para formularios.
  *
- * <p>Cada método devuelve un mensaje de error si la validación falla,
+ * <p>
+ * Cada método devuelve un mensaje de error si la validación falla,
  * o {@code null} si el valor es válido. Esto permite acumular mensajes
- * y mostrarlos al usuario de forma concisa.</p>
+ * y mostrarlos al usuario de forma concisa.
+ * </p>
  */
 public final class Validacion {
 
@@ -20,7 +22,8 @@ public final class Validacion {
     /** Acepta dígitos, espacios, guiones y paréntesis. Ej: (601) 382-0000 */
     private static final Pattern TELEFONO = Pattern.compile("^[0-9()+\\-\\s]+$");
 
-    private Validacion() {}
+    private Validacion() {
+    }
 
     public static String requerido(String etiqueta, String valor) {
         if (valor == null || valor.trim().isEmpty()) {
@@ -47,7 +50,8 @@ public final class Validacion {
      * @return mensaje de error o {@code null} si es válido
      */
     public static String longitudMin(String etiqueta, String valor, int min) {
-        if (valor == null || valor.isBlank()) return null;
+        if (valor == null || valor.isBlank())
+            return null;
         if (valor.trim().length() < min) {
             return "• " + etiqueta + " debe tener al menos " + min + " caracteres";
         }
@@ -66,7 +70,8 @@ public final class Validacion {
      * @return mensaje de error o {@code null} si es válido
      */
     public static String minDigitos(String etiqueta, String valor, int min) {
-        if (valor == null || valor.isBlank()) return null;
+        if (valor == null || valor.isBlank())
+            return null;
         long digitos = valor.chars().filter(Character::isDigit).count();
         if (digitos < min) {
             return "• " + etiqueta + " debe incluir al menos " + min + " dígitos";
@@ -74,8 +79,38 @@ public final class Validacion {
         return null;
     }
 
+    public static String noSoloNumeros(String etiqueta, String valor) {
+        if (valor == null || valor.isBlank())
+            return null;
+
+        String texto = valor.trim();
+
+        if (texto.matches("\\d+")) {
+            return "• " + etiqueta + " no puede contener solo números";
+        }
+
+        return null;
+    }
+
+    public static String sinCaracteresPeligrosos(String etiqueta, String valor) {
+        if (valor == null || valor.isBlank())
+            return null;
+
+        String texto = valor.trim();
+
+        if (texto.contains("<") || texto.contains(">") ||
+                texto.contains("{") || texto.contains("}") ||
+                texto.contains("[") || texto.contains("]") ||
+                texto.contains("\\")) {
+            return "• " + etiqueta + " contiene caracteres no permitidos";
+        }
+
+        return null;
+    }
+
     public static String formatoCodigo(String etiqueta, String valor) {
-        if (valor == null || valor.isBlank()) return null;
+        if (valor == null || valor.isBlank())
+            return null;
         if (!CODIGO.matcher(valor.trim()).matches()) {
             return "• " + etiqueta + " solo permite letras, números y guiones";
         }
@@ -83,7 +118,8 @@ public final class Validacion {
     }
 
     public static String formatoTelefono(String valor) {
-        if (valor == null || valor.isBlank()) return null;
+        if (valor == null || valor.isBlank())
+            return null;
         if (!TELEFONO.matcher(valor.trim()).matches()) {
             return "• Teléfono solo permite dígitos, espacios, paréntesis y guiones";
         }
@@ -99,14 +135,17 @@ public final class Validacion {
 
     /** Marca el control como inválido visualmente. */
     public static void marcarInvalido(Node control, boolean invalido) {
-        if (control == null) return;
+        if (control == null)
+            return;
         control.getStyleClass().remove("input-invalido");
-        if (invalido) control.getStyleClass().add("input-invalido");
+        if (invalido)
+            control.getStyleClass().add("input-invalido");
     }
 
     /** Limpia el estado visual de varios controles. */
     public static void limpiarEstado(Node... controles) {
-        for (Node c : controles) marcarInvalido(c, false);
+        for (Node c : controles)
+            marcarInvalido(c, false);
     }
 
     /** Helper común para campos de texto. */
@@ -121,10 +160,10 @@ public final class Validacion {
      * de revisar.
      *
      * Reglas:
-     *  - Si el texto está vacío, devuelve null (eso lo valida el
-     *    método {@link #requerido}, no este).
-     *  - Si tiene letras u otros caracteres, devuelve un error.
-     *  - Si es un número pero negativo, devuelve un error.
+     * - Si el texto está vacío, devuelve null (eso lo valida el
+     * método {@link #requerido}, no este).
+     * - Si tiene letras u otros caracteres, devuelve un error.
+     * - Si es un número pero negativo, devuelve un error.
      *
      * @param etiqueta nombre del campo que se mostrará en el mensaje
      *                 de error (ej: "Precio").
@@ -133,7 +172,8 @@ public final class Validacion {
      *         válido, o null si todo está bien.
      */
     public static String numeroPositivo(String etiqueta, String valor) {
-        if (valor == null || valor.isBlank()) return null;
+        if (valor == null || valor.isBlank())
+            return null;
 
         String texto = valor.trim();
 
