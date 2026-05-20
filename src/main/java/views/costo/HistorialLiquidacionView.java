@@ -47,18 +47,45 @@ public class HistorialLiquidacionView extends VBox {
     TableColumn<LiquidacionResponse, String> colCodigo = new TableColumn<>("Liquidación N°");
     colCodigo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCodigo()));
 
-    TableColumn<LiquidacionResponse, String> colCobro = new TableColumn<>("Monto Cobrado a EPS");
-    colCobro.setCellValueFactory(
-        c -> new SimpleStringProperty(PrecioFormato.formatear(c.getValue().getTotalCoberturaEps())));
-
-    TableColumn<LiquidacionResponse, String> colCopago = new TableColumn<>("Copago Pacientes");
-    colCopago.setCellValueFactory(
-        c -> new SimpleStringProperty(PrecioFormato.formatear(c.getValue().getTotalCopagoPaciente())));
-
     TableColumn<LiquidacionResponse, String> colTotal = new TableColumn<>("Total Procesado");
     colTotal.setCellValueFactory(c -> new SimpleStringProperty(PrecioFormato.formatear(c.getValue().getTotalBruto())));
 
-    tablaMaestra.getColumns().addAll(colCodigo, colCobro, colCopago, colTotal);
+    TableColumn<LiquidacionResponse, String> colEstado = new TableColumn<>("Estado");
+    colEstado.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getEstado()));
+    colEstado.setStyle("-fx-alignment: CENTER; -fx-font-weight: bold;");
+
+    TableColumn<LiquidacionResponse, Void> colAccion = new TableColumn<>("Acción");
+    colAccion.setCellFactory(param -> new TableCell<>() {
+      private final Button btnPagar = new Button("Conciliar");
+      private final Label lblPagado = new Label("Pagada");
+      {
+        btnPagar
+            .setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-cursor: hand; -fx-font-size: 11px;");
+        lblPagado.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+
+        btnPagar.setOnAction(event -> {
+          LiquidacionResponse liq = getTableView().getItems().get(getIndex());
+          controller.marcarComoPagada(liq.getCodigo());
+        });
+      }
+
+      @Override
+      protected void updateItem(Void item, boolean empty) {
+        super.updateItem(item, empty);
+        if (empty) {
+          setGraphic(null);
+        } else {
+          LiquidacionResponse liq = getTableView().getItems().get(getIndex());
+          if ("PENDIENTE".equals(liq.getEstado())) {
+            setGraphic(btnPagar);
+          } else {
+            setGraphic(lblPagado);
+          }
+        }
+      }
+    });
+
+    tablaMaestra.getColumns().addAll(colCodigo, colTotal, colEstado, colAccion);
   }
 
   private void configurarTablaDetalle() {
@@ -98,6 +125,9 @@ public class HistorialLiquidacionView extends VBox {
       if (lista.isEmpty()) {
         tablaMaestra.setPlaceholder(new Label("No se ha generado ninguna liquidación históricamente."));
       }
+    });
+    controller.setOnPagoConciliado(() -> {
+      views.common.Toast.success(this, "El pago ha sido registrado en bancos y conciliado con éxito.");
     });
 
     controller

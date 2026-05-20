@@ -16,11 +16,9 @@ public class CostoView extends VBox {
         TabPane tabPane = new TabPane();
         tabPane.getStyleClass().add("tab-pane");
 
-        // Pestaña 1: Configuración de Tarifas (Lo que acabamos de hacer)
         Tab tabTarifas = new Tab("Parametrización EPS", new TarifaEpsView());
         tabTarifas.setClosable(false);
 
-        // Pestaña 2: Aquí pondremos el Generador de Liquidaciones en la Tarea 2
         Tab tabLiquidaciones = new Tab("Generar Liquidaciones", new LiquidacionView());
         tabLiquidaciones.setClosable(false);
 

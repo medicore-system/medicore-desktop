@@ -42,4 +42,14 @@ public class LiquidacionService extends HttpServiceImpl<LiquidacionRequest, Stri
       }
     });
   }
+
+  public CompletableFuture<String> conciliarPago(String codigo) {
+    java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+        .uri(java.net.URI.create(BASE_URL + "/" +codigo + "/estado?nuevoEstado=PAGADA"))
+        .header("Content-Type", "application/json")
+        .PUT(java.net.http.HttpRequest.BodyPublishers.noBody())
+        .build();
+    return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+        .thenApply(java.net.http.HttpResponse::body);
+  }
 }

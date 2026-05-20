@@ -10,6 +10,7 @@ public class LiquidacionResponse {
     private BigDecimal totalBruto;
     private BigDecimal totalCoberturaEps;
     private BigDecimal totalCopagoPaciente;
+    private String estado;
     private List<FacturaResumenModel> facturas;
 
     public String getCodigo() { return codigo; }
@@ -20,6 +21,8 @@ public class LiquidacionResponse {
     public void setTotalCoberturaEps(BigDecimal totalCoberturaEps) { this.totalCoberturaEps = totalCoberturaEps; }
     public BigDecimal getTotalCopagoPaciente() { return totalCopagoPaciente; }
     public void setTotalCopagoPaciente(BigDecimal totalCopagoPaciente) { this.totalCopagoPaciente = totalCopagoPaciente; }
+    public String getEstado() {return estado;}
+    public void setEstado(String estado) {this.estado = estado;} 
     public List<FacturaResumenModel> getFacturas() { return facturas; }
     public void setFacturas(List<FacturaResumenModel> facturas) { this.facturas = facturas; }
 }
