@@ -20,7 +20,7 @@ public class Main extends Application {
         scene.getStylesheets().add(getClass().getResource("styles/app.css").toExternalForm());
         //Añadimos al Stage toda nuestra scene ya lista para mostrar
         stage.setScene(scene);
-        stage.setTitle("Medicore-ADMIN");
+        stage.setTitle("Medicore");
         stage.show();
     }
 
