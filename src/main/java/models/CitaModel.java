@@ -38,6 +38,11 @@ public class CitaModel {
     private BigDecimal costo;
 
     /**
+     * Nombre de la especialidad de cita.
+     */
+    private String especialidad;
+
+    /**
      * Nombre del tipo de cita.
      */
     private String tipoCita;
@@ -56,6 +61,27 @@ public class CitaModel {
      * Nombre del hospital donde se realizará la cita.
      */
     private String Hospital;
+
+    /**
+     * Nombre de la ciudad donde se realizará la cita.
+     */
+    private String ciudad;
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
+
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
+    }
+
+    public String getCiudad() {
+        return ciudad;
+    }
+
+    public void setCiudad(String ciudad) {
+        this.ciudad = ciudad;
+    }
 
     public String getCodigo() {
         return codigo;
