@@ -2,7 +2,9 @@ package models;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 /**
  * Modelo que representa una Cita dentro del sistema.
  * Contiene la misma estructura de datos proporcionada
@@ -18,10 +20,11 @@ public class CitaModel {
     /**
      * Estado actual de la cita.
      *
-     * <p>Valores posibles:
+     * <p>
+     * Valores posibles:
      * <ul>
-     *     <li>APROBADA</li>
-     *     <li>DENEGADA</li>
+     * <li>APROBADA</li>
+     * <li>DENEGADA</li>
      * </ul>
      * </p>
      */
@@ -61,6 +64,7 @@ public class CitaModel {
      * Nombre del hospital donde se realizará la cita.
      */
     private String Hospital;
+    private String especialidad;
 
     /**
      * Nombre de la ciudad donde se realizará la cita.
@@ -90,7 +94,6 @@ public class CitaModel {
     public void setCodigo(String codigo) {
         this.codigo = codigo;
     }
-
 
     public String getEstado() {
         return estado;
@@ -146,5 +149,13 @@ public class CitaModel {
 
     public void setHospital(String hospital) {
         Hospital = hospital;
+    }
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
+
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
     }
 }

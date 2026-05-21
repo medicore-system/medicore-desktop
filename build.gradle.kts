@@ -32,3 +32,32 @@ application {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register<Jar>("fatJar") {
+    // Nombre del archivo final
+    archiveBaseName.set("medicore-desktop")
+    archiveVersion.set("1.0")
+    archiveClassifier.set("standalone")
+
+    // Atributos del manifiesto (Apunta directamente a Launcher porque no tiene paquete)
+    manifest {
+        attributes(
+            "Main-Class" to "Launcher" 
+        )
+    }
+
+    // Incluye el código compilado
+    from(sourceSets.main.get().output)
+
+    // Extrae y empaca todas las dependencias dentro del JAR
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
+
+    // Evita problemas de firmas duplicadas al mezclar librerías
+    exclude("META-INF/*.RSA", "META-INF/*.SF", "META-INF/*.DSA")
+    
+    // Soluciona conflictos si hay archivos duplicados
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
