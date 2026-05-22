@@ -64,7 +64,6 @@ public class CitaModel {
      * Nombre del hospital donde se realizará la cita.
      */
     private String Hospital;
-    private String especialidad;
 
     /**
      * Nombre de la ciudad donde se realizará la cita.
@@ -149,13 +148,5 @@ public class CitaModel {
 
     public void setHospital(String hospital) {
         Hospital = hospital;
-    }
-
-    public String getEspecialidad() {
-        return especialidad;
-    }
-
-    public void setEspecialidad(String especialidad) {
-        this.especialidad = especialidad;
     }
 }
