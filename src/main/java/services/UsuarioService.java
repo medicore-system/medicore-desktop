@@ -145,7 +145,6 @@ public class UsuarioService extends HttpServiceImpl<Object, String> {
                     try{
                         return mapper.readValue(json, UsuarioModel.class);
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });
