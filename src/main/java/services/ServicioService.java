@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public class ServicioService extends HttpServiceImpl<Object, String> {
 
     /** URL base de la API para Servicios. */
-    private static final String BASE_URL = dotenv.get("URL_API_SERVICIO");
+    private static final String BASE_URL = dotenv.get("URL_API_SERVICIO","http://localhost:8080/services");
 
     /** Instancia única del servicio. */
     private static ServicioService instance;

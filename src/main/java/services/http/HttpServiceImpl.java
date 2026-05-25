@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
+
 /**
  * Implementación base de servicios HTTP genéricos.
  *
@@ -18,10 +19,10 @@ import java.util.concurrent.CompletableFuture;
  * mediante {@link ObjectMapper}.
  * </p>
  *
- * @param <T> tipo de entidad manejada por el servicio
+ * @param <T>  tipo de entidad manejada por el servicio
  * @param <ID> tipo del identificador de la entidad
  */
-public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
+public abstract class HttpServiceImpl<T, ID> implements IHttpService<T, ID> {
     /**
      * Cliente HTTP utilizado para realizar las peticiones.
      */
@@ -34,7 +35,9 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
     /**
      * Dotenv utilizado para leer las variables de entorno del .env
      */
-    protected static Dotenv dotenv =  Dotenv.load();
+    protected static Dotenv dotenv = Dotenv.configure()
+            .ignoreIfMissing()
+            .load();
 
     /**
      * URL base del recurso consumido.
@@ -46,7 +49,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      *
      * @param bu URL base del httpService
      */
-    protected HttpServiceImpl(String bu){
+    protected HttpServiceImpl(String bu) {
         this.baseUrl = bu;
         this.client = HttpClient.newHttpClient();
         this.mapper = new ObjectMapper();
@@ -60,7 +63,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      * @return un {@link CompletableFuture} con la respuesta en formato JSON
      */
     @Override
-    public CompletableFuture<String> getAll(){
+    public CompletableFuture<String> getAll() {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl))
                 .header("Content-Type", "application/json")
@@ -76,7 +79,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
     }
 
     @Override
-    public CompletableFuture<String> getAllCustom(String path){
+    public CompletableFuture<String> getAllCustom(String path) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
@@ -121,7 +124,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      */
     @Override
     public CompletableFuture<String> post(T body) {
-        try{
+        try {
             String json = mapper.writeValueAsString(body);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl))
@@ -135,7 +138,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                             throw new RuntimeException("Error " + resp.statusCode() + ": " + resp.body());
                         return resp.body();
                     });
-        }catch(Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -143,13 +146,13 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
     /**
      * Realiza una petición PUT para actualizar un recurso existente.
      *
-     * @param id identificador del recurso a actualizar
+     * @param id   identificador del recurso a actualizar
      * @param body objeto con la información actualizada
      * @return un {@link CompletableFuture} con la respuesta del servidor
      */
     @Override
     public CompletableFuture<String> put(ID id, T body) {
-        try{
+        try {
             String json = mapper.writeValueAsString(body);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/" + id))
@@ -176,7 +179,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      * @return un {@link CompletableFuture} con la respuesta del servidor
      */
     protected CompletableFuture<String> putCustom(String path, T body) {
-        try{
+        try {
             String json = body != null ? mapper.writeValueAsString(body) : "";
             System.out.println(path);
             HttpRequest request = HttpRequest.newBuilder()
@@ -187,20 +190,20 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body);
-        }catch (Exception e){
+        } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
     }
 
-    public CompletableFuture<String> delete(ID documento){
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/" + documento))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
-                    .DELETE()
-                    .build();
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(HttpResponse::body);
+    public CompletableFuture<String> delete(ID documento) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/" + documento))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
+                .DELETE()
+                .build();
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body);
     }
 
     /**
@@ -215,7 +218,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      * @throws Exception si la respuesta contiene un error HTTP
      */
     @Override
-    public void validateResponse(HttpResponse<String> response) throws Exception{
+    public void validateResponse(HttpResponse<String> response) throws Exception {
         if (response.statusCode() >= 400) {
             throw new Exception("Error del servidor (" + response.statusCode() + "): " + response.body());
         }

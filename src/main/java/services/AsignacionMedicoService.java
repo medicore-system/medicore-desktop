@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class AsignacionMedicoService extends HttpServiceImpl<Object, Integer> {
 
-    private static final String BASE_URL = dotenv.get("URL_API_ASIGNACIONES");
+    private static final String BASE_URL = dotenv.get("URL_API_ASIGNACIONES","http://localhost:8080/asignaciones");
     private static AsignacionMedicoService instance;
 
     private AsignacionMedicoService() {

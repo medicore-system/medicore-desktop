@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class CitaService extends HttpServiceImpl<Object, String> {
-    private static final String BASE_URL = dotenv.get("URL_API_CITA");
+    private static final String BASE_URL = dotenv.get("URL_API_CITA","http://localhost:8080/Citas");
     private static CitaService instance;
 
     private CitaService(){

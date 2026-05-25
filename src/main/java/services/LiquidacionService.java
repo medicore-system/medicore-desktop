@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class LiquidacionService extends HttpServiceImpl<LiquidacionRequest, String> {
 
-  private static final String BASE_URL = dotenv.get("URL_API_LIQUIDACION");
+  private static final String BASE_URL = dotenv.get("URL_API_LIQUIDACION","http://localhost:8080/api/liquidaciones");
   private static LiquidacionService instance;
 
   private LiquidacionService() {

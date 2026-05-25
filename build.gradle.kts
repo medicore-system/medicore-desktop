@@ -42,11 +42,12 @@ runtime {
         "java.net.http", 
         "java.logging", 
         "jdk.unsupported", 
-        "jdk.crypto.ec"
+        "jdk.crypto.ec",
+        "java.se"
     ))
     
     launcher {
-        noConsole = true 
+        noConsole = false 
     }
     
     jpackage {

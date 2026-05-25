@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class CiudadService extends HttpServiceImpl<Object, String> {
 
-    private static final String BASE_URL = dotenv.get("URL_API_CIUDAD");
+    private static final String BASE_URL = dotenv.get("URL_API_CIUDAD","http://localhost:8080/cities");
 
     private static CiudadService instance;
 
