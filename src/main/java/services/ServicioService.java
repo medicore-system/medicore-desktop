@@ -133,12 +133,18 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
      * Cuerpo de la petición POST /services.
      * No incluye el código porque el backend lo genera automáticamente.
      * Mapea exactamente el ServicioRequest del backend.
+     *
+     * <p>Los campos {@code procedimiento}, {@code resultados} y {@code codigoHistorial}
+     * son opcionales: pueden ser {@code null}.</p>
      */
     public record ServicioCreateBody(
             String nombre,
             String descripcion,
             Integer idTipoServicio,
-            BigDecimal precio
+            BigDecimal precio,
+            String procedimiento,
+            String resultados,
+            String codigoHistorial
     ) {}
 
     /**
