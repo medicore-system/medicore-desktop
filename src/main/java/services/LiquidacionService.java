@@ -2,6 +2,7 @@ package services;
 
 import models.LiquidacionRequest;
 import models.LiquidacionResponse;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 
 import java.net.URI;
@@ -51,6 +52,7 @@ public class LiquidacionService extends HttpServiceImpl<LiquidacionRequest, Stri
     java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
         .uri(java.net.URI.create(BASE_URL + "/" + codigo + "/estado?nuevoEstado=PAGADA"))
         .header("Content-Type", "application/json")
+        .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
         .PUT(java.net.http.HttpRequest.BodyPublishers.noBody())
         .build();
     return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
@@ -60,6 +62,8 @@ public class LiquidacionService extends HttpServiceImpl<LiquidacionRequest, Stri
   public CompletableFuture<byte[]> descargarPdf(String codigo) {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(URI.create(BASE_URL + "/" + codigo + "/pdf"))
+        .header("Content-Type", "application/json")
+        .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
         .GET()
         .build();
 
