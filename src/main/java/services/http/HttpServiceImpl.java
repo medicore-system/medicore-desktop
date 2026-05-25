@@ -1,6 +1,7 @@
 package services.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -28,6 +29,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
      * Mapper utilizado para convertir objetos Java a JSON y viceversa.
      */
     protected final ObjectMapper mapper;
+
+    /**
+     * Dotenv utilizado para leer las variables de entorno del .env
+     */
+    protected static Dotenv dotenv =  Dotenv.load();
 
     /**
      * URL base del recurso consumido.

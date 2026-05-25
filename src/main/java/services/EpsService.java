@@ -28,7 +28,7 @@ public class EpsService extends HttpServiceImpl<Object, String> {
     /**
      * URL base de la API.
      */
-    private static final String BASE_URL = "http://localhost:8080/Eps";
+    private static final String BASE_URL = dotenv.get("URL_API_EPS");
 
     /**
      * Instancia única del servicio.
