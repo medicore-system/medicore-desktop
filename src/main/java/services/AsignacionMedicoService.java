@@ -2,6 +2,7 @@ package services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import models.AsignacionMedicoModel;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 
 import java.util.List;
@@ -45,6 +46,7 @@ public class AsignacionMedicoService extends HttpServiceImpl<Object, Integer> {
         java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                 .uri(java.net.URI.create(BASE_URL + path))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())

@@ -3,6 +3,7 @@ package services;
 import com.fasterxml.jackson.core.type.TypeReference;
 import models.ServicioModel;
 import models.TipoServicioModel;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -66,6 +67,7 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/types"))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -123,6 +125,7 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/" + codigo))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .DELETE()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())

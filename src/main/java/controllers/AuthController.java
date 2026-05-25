@@ -1,6 +1,7 @@
 package controllers;
 
 import javafx.application.Platform;
+import models.auth.SessionManager;
 import services.AuthService;
 
 import java.util.function.Consumer;
@@ -45,6 +46,7 @@ public class AuthController {
     public void login(AuthService.AuthCreateBody body){
         authService.login(body).thenAccept( auth -> Platform.runLater(()->{
             if(onExito != null && auth.getRole().equals("ADMIN")){
+                SessionManager.getInstance().setSession(auth.getToken(), auth.getRole());
                 onExito.accept("BIENVENIDO");
             }
         })).exceptionally(e -> {
