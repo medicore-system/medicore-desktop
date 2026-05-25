@@ -2,14 +2,18 @@ package views.mainLayout;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import models.auth.SessionManager;
 import views.asignacion.AsignacionView;
 import views.asignacion.asignacionesMedico.AsignacionesMedicoView;
+import views.auth.LoginView;
 import views.ciudad.CiudadView;
 import views.costo.CostoView;
 import views.facturacion.CajaView;
@@ -75,6 +79,8 @@ public class MainLayout extends BorderPane {
         Button btnCostos       = crearBotonMenu("🏢", "Liquidación EPS");
         Button btnFacturacion  = crearBotonMenu("💵", "Caja Pacientes");
         Button btnReportes     = crearBotonMenu("📊", "Reportes BI");
+        Button btnLogout       = crearBotonMenu("❌", "Logout");
+
 
         // Eventos y ruteo
         btnCiudades.setOnAction(e -> { activarBoton(btnCiudades); setCenter(new CiudadView()); });
@@ -87,6 +93,11 @@ public class MainLayout extends BorderPane {
         btnCostos.setOnAction(e -> { activarBoton(btnCostos); setCenter(new CostoView()); });
         btnFacturacion.setOnAction(e -> { activarBoton(btnFacturacion); setCenter(new CajaView()); });
         btnReportes.setOnAction(e -> { activarBoton(btnReportes); setCenter(new ReporteView()); });
+        btnLogout.setOnAction(e -> {
+            SessionManager.getInstance().clear();
+            Stage stage = (Stage) getScene().getWindow();
+            stage.setScene(new Scene(new LoginView(stage)));
+        });
 
         // Marcar el primero como activo por defecto
         activarBoton(btnCiudades);
@@ -94,7 +105,7 @@ public class MainLayout extends BorderPane {
         // Agregamos los botones al contenedor
         menuContainer.getChildren().addAll(
                 btnCiudades, btnHospitales, btnMedicos, btnAsignaciones,
-                btnPacientes, btnServicios, btnHistorial, btnCostos, btnFacturacion, btnReportes
+                btnPacientes, btnServicios, btnHistorial, btnCostos, btnFacturacion, btnReportes, btnLogout
         );
 
         menu.getChildren().addAll(header, menuContainer);
