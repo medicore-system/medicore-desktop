@@ -1,6 +1,8 @@
 package services.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.cdimascio.dotenv.Dotenv;
+import models.auth.SessionManager;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,6 +32,11 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
     protected final ObjectMapper mapper;
 
     /**
+     * Dotenv utilizado para leer las variables de entorno del .env
+     */
+    protected static Dotenv dotenv =  Dotenv.load();
+
+    /**
      * URL base del recurso consumido.
      */
     protected final String baseUrl;
@@ -57,6 +64,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -72,6 +80,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -93,6 +102,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/" + id))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -116,6 +126,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -143,6 +154,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/" + id))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .PUT(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -170,6 +182,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(path))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .PUT(HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -183,6 +196,7 @@ public abstract class HttpServiceImpl <T, ID> implements IHttpService<T, ID>{
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/" + documento))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .DELETE()
                     .build();
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())

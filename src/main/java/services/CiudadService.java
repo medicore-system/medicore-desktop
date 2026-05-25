@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class CiudadService extends HttpServiceImpl<Object, String> {
 
-    private static final String BASE_URL = "http://localhost:8080/cities";
+    private static final String BASE_URL = dotenv.get("URL_API_CIUDAD");
 
     private static CiudadService instance;
 
@@ -27,11 +27,9 @@ public class CiudadService extends HttpServiceImpl<Object, String> {
     /** GET /cities — devuelve la lista completa de ciudades. */
     public CompletableFuture<List<CiudadModel>> getAllCiudades() {
         return getAll().thenApply(json -> {
-            System.out.println("[CiudadService] GET /cities respuesta: " + json);
             try {
                 return mapper.readValue(json, new TypeReference<List<CiudadModel>>() {});
             } catch (Exception ex) {
-                System.err.println("[CiudadService] Error parseando: " + ex.getMessage());
                 throw new RuntimeException("Error parseando ciudades: " + ex.getMessage(), ex);
             }
         });
@@ -43,11 +41,9 @@ public class CiudadService extends HttpServiceImpl<Object, String> {
      */
     public CompletableFuture<CiudadModel> crear(CiudadCreateBody body) {
         return post(body).thenApply(json -> {
-            System.out.println("[CiudadService] POST /cities respuesta: " + json);
             try {
                 return mapper.readValue(json, CiudadModel.class);
             } catch (Exception e) {
-                System.err.println("[CiudadService] Error parseando crear: " + e.getMessage());
                 throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
             }
         });
@@ -58,11 +54,9 @@ public class CiudadService extends HttpServiceImpl<Object, String> {
      */
     public CompletableFuture<CiudadModel> actualizar(String codigo, CiudadUpdateBody body) {
         return put(codigo, body).thenApply(json -> {
-            System.out.println("[CiudadService] PUT /cities/" + codigo + " respuesta: " + json);
             try {
                 return mapper.readValue(json, CiudadModel.class);
             } catch (Exception e) {
-                System.err.println("[CiudadService] Error parseando actualizar: " + e.getMessage());
                 throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
             }
         });

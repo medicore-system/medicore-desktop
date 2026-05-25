@@ -36,7 +36,7 @@ public class UsuarioService extends HttpServiceImpl<Object, String> {
     /**
      * URL base de la API para Usuarios.
      */
-    private static final String BASE_URL = "http://localhost:8080/Usuarios";
+    private static final String BASE_URL = dotenv.get("URL_API_USUARIO");
 
     /**
      * Instancia única del servicio.
@@ -145,7 +145,6 @@ public class UsuarioService extends HttpServiceImpl<Object, String> {
                     try{
                         return mapper.readValue(json, UsuarioModel.class);
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });

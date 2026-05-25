@@ -18,7 +18,7 @@ public class EspecialidadService extends HttpServiceImpl<Object, String> {
     /**
      * URL base del endpoint de especialidades.
      */
-    private static final String BASE_URL = "http://localhost:8080/especialidad";
+    private static final String BASE_URL = dotenv.get("URL_API_ESPECIALIDAD");
 
     /**
      * Instancia única del servicio.

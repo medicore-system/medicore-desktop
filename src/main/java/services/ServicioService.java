@@ -3,6 +3,7 @@ package services;
 import com.fasterxml.jackson.core.type.TypeReference;
 import models.ServicioModel;
 import models.TipoServicioModel;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -22,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public class ServicioService extends HttpServiceImpl<Object, String> {
 
     /** URL base de la API para Servicios. */
-    private static final String BASE_URL = "http://localhost:8080/services";
+    private static final String BASE_URL = dotenv.get("URL_API_SERVICIO");
 
     /** Instancia única del servicio. */
     private static ServicioService instance;
@@ -66,6 +67,7 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/types"))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -123,6 +125,7 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/" + codigo))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .DELETE()
                 .build();
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -133,12 +136,18 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
      * Cuerpo de la petición POST /services.
      * No incluye el código porque el backend lo genera automáticamente.
      * Mapea exactamente el ServicioRequest del backend.
+     *
+     * <p>Los campos {@code procedimiento}, {@code resultados} y {@code codigoHistorial}
+     * son opcionales: pueden ser {@code null}.</p>
      */
     public record ServicioCreateBody(
             String nombre,
             String descripcion,
             Integer idTipoServicio,
-            BigDecimal precio
+            BigDecimal precio,
+            String procedimiento,
+            String resultados,
+            String codigoHistorial
     ) {}
 
     /**

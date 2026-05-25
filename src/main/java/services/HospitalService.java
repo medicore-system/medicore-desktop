@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import models.AreaInternaModel;
 import models.CiudadModel;
 import models.HospitalModel;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 
 import java.util.List;
@@ -43,10 +44,10 @@ import java.util.concurrent.CompletableFuture;
 public class HospitalService extends HttpServiceImpl<Object, String> {
 
     /** URL base de la API para Hospitales. */
-    private static final String BASE_URL = "http://localhost:8080/hospitals";
+    private static final String BASE_URL = dotenv.get("URL_API_HOSPITAL");
 
     /** URL base de la API para Ciudades. */
-    private static final String CITIES_URL = "http://localhost:8080/cities";
+    private static final String CITIES_URL = dotenv.get("URL_API_CIUDAD");
 
     /** Instancia única del servicio. */
     private static HospitalService instance;
@@ -228,6 +229,7 @@ public class HospitalService extends HttpServiceImpl<Object, String> {
         java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                 .uri(java.net.URI.create(url))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .GET()
                 .build();
         return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())
@@ -251,6 +253,7 @@ public class HospitalService extends HttpServiceImpl<Object, String> {
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(url))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                     .POST(java.net.http.HttpRequest.BodyPublishers.ofString(json))
                     .build();
             return client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofString())

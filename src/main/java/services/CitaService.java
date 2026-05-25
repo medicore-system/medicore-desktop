@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class CitaService extends HttpServiceImpl<Object, String> {
-    private static final String BASE_URL = "http://localhost:8080/Citas";
+    private static final String BASE_URL = dotenv.get("URL_API_CITA");
     private static CitaService instance;
 
     private CitaService(){
@@ -52,7 +52,6 @@ public class CitaService extends HttpServiceImpl<Object, String> {
                         return mapper.readValue(json, CitaModel.class);
 
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });
@@ -72,7 +71,6 @@ public class CitaService extends HttpServiceImpl<Object, String> {
                         return mapper.readValue(json, CitaModel.class);
 
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });
