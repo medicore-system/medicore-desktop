@@ -43,10 +43,10 @@ import java.util.concurrent.CompletableFuture;
 public class HospitalService extends HttpServiceImpl<Object, String> {
 
     /** URL base de la API para Hospitales. */
-    private static final String BASE_URL = "http://localhost:8080/hospitals";
+    private static final String BASE_URL = dotenv.get("URL_API_HOSPITAL");
 
     /** URL base de la API para Ciudades. */
-    private static final String CITIES_URL = "http://localhost:8080/cities";
+    private static final String CITIES_URL = dotenv.get("URL_API_CIUDAD");
 
     /** Instancia única del servicio. */
     private static HospitalService instance;

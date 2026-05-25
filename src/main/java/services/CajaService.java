@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class CajaService extends HttpServiceImpl<Object, String> {
 
-    private static final String BASE_URL = "http://localhost:8080/api/caja";
+    private static final String BASE_URL = dotenv.get("URL_API_CAJA");
     private static CajaService instance;
 
     private CajaService() {

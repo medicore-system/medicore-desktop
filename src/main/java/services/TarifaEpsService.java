@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class TarifaEpsService extends HttpServiceImpl<Object, String> {
 
-  private static final String BASE_URL = "http://localhost:8080/api/tarifas-eps";
+  private static final String BASE_URL = dotenv.get("URL_API_TARIFA");
   private static TarifaEpsService instance;
 
   private TarifaEpsService() {
