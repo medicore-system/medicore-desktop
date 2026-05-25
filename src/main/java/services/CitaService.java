@@ -52,7 +52,6 @@ public class CitaService extends HttpServiceImpl<Object, String> {
                         return mapper.readValue(json, CitaModel.class);
 
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });
@@ -72,7 +71,6 @@ public class CitaService extends HttpServiceImpl<Object, String> {
                         return mapper.readValue(json, CitaModel.class);
 
                     }catch (Exception e){
-                        System.out.println(e.getMessage());
                         throw new RuntimeException("Error parseando respuesta: " + e.getMessage(), e);
                     }
                 });
