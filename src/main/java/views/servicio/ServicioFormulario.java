@@ -40,20 +40,26 @@ public final class ServicioFormulario {
      */
     public static Dialog<ServicioService.ServicioCreateBody> dialogoCrear(List<TipoServicioModel> tipos) {
         Dialog<ServicioService.ServicioCreateBody> dialog = baseDialog(
-                "Nuevo Servicio", "Registrar un nuevo servicio", 520, 460);
+                "Nuevo Servicio", "Registrar un nuevo servicio", 520, 580);
 
-        TextField txtNombre = campoTexto("", "Nombre del servicio");
-        TextField txtDesc   = campoTexto("", "Descripción del servicio");
-        TextField txtPrecio = campoTexto("", "Ej: 80000");
+        TextField txtNombre         = campoTexto("", "Nombre del servicio");
+        TextField txtDesc           = campoTexto("", "Descripción del servicio");
+        TextField txtPrecio         = campoTexto("", "Ej: 80000");
         ComboBox<TipoServicioModel> cmbTipo = comboTipo(tipos, null);
+        TextField txtProcedimiento  = campoTexto("", "Procedimiento realizado (opcional)");
+        TextField txtResultados     = campoTexto("", "Resultados obtenidos (opcional)");
+        TextField txtHistorial      = campoTexto("", "Código historial clínico, ej: HC005 (opcional)");
         Label lblErrores = etiquetaErrores();
 
         GridPane grid = grid();
-        agregarFila(grid, 0, "Nombre",      txtNombre);
-        agregarFila(grid, 1, "Descripción", txtDesc);
-        agregarFila(grid, 2, "Tipo",        cmbTipo);
-        agregarFila(grid, 3, "Precio",      txtPrecio);
-        grid.add(lblErrores, 0, 4, 2, 1);
+        agregarFila(grid, 0, "Nombre",        txtNombre);
+        agregarFila(grid, 1, "Descripción",   txtDesc);
+        agregarFila(grid, 2, "Tipo",          cmbTipo);
+        agregarFila(grid, 3, "Precio",        txtPrecio);
+        agregarFila(grid, 4, "Procedimiento", txtProcedimiento);
+        agregarFila(grid, 5, "Resultados",    txtResultados);
+        agregarFila(grid, 6, "Historial HC",  txtHistorial);
+        grid.add(lblErrores, 0, 7, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -72,11 +78,17 @@ public final class ServicioFormulario {
         dialog.setResultConverter(btn -> {
             if (btn != ButtonType.OK) return null;
             TipoServicioModel tipoSeleccionado = cmbTipo.getValue();
+            String proc      = txtProcedimiento.getText().trim();
+            String resultados= txtResultados.getText().trim();
+            String historial = txtHistorial.getText().trim();
             return new ServicioService.ServicioCreateBody(
                     Validacion.texto(txtNombre),
                     Validacion.texto(txtDesc),
                     tipoSeleccionado.getId(),
-                    PrecioFormato.parsear(Validacion.texto(txtPrecio)));
+                    PrecioFormato.parsear(Validacion.texto(txtPrecio)),
+                    proc.isEmpty()      ? null : proc,
+                    resultados.isEmpty() ? null : resultados,
+                    historial.isEmpty()  ? null : historial);
         });
         return dialog;
     }

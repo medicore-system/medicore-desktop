@@ -13,6 +13,7 @@ import views.asignacion.asignacionesMedico.AsignacionesMedicoView;
 import views.ciudad.CiudadView;
 import views.costo.CostoView;
 import views.facturacion.CajaView;
+import views.historial.HistorialView;
 import views.hospital.HospitalDetalleView;
 import views.hospital.HospitalView;
 import views.medico.MedicoView;
@@ -70,6 +71,7 @@ public class MainLayout extends BorderPane {
         Button btnAsignaciones = crearBotonMenu("📅", "Asignaciones");
         Button btnPacientes    = crearBotonMenu("🤕", "Pacientes");
         Button btnServicios    = crearBotonMenu("🩺", "Servicios");
+        Button btnHistorial    = crearBotonMenu("📋", "Historial Clínico");
         Button btnCostos       = crearBotonMenu("🏢", "Liquidación EPS");
         Button btnFacturacion  = crearBotonMenu("💵", "Caja Pacientes");
         Button btnReportes     = crearBotonMenu("📊", "Reportes BI");
@@ -81,6 +83,7 @@ public class MainLayout extends BorderPane {
         btnAsignaciones.setOnAction(e -> { activarBoton(btnAsignaciones); mostrarAsignaciones(); });
         btnPacientes.setOnAction(e -> { activarBoton(btnPacientes); mostrarUsuarios(); });
         btnServicios.setOnAction(e -> { activarBoton(btnServicios); setCenter(new ServicioView()); });
+        btnHistorial.setOnAction(e -> { activarBoton(btnHistorial); setCenter(new HistorialView()); });
         btnCostos.setOnAction(e -> { activarBoton(btnCostos); setCenter(new CostoView()); });
         btnFacturacion.setOnAction(e -> { activarBoton(btnFacturacion); setCenter(new CajaView()); });
         btnReportes.setOnAction(e -> { activarBoton(btnReportes); setCenter(new ReporteView()); });
@@ -91,7 +94,7 @@ public class MainLayout extends BorderPane {
         // Agregamos los botones al contenedor
         menuContainer.getChildren().addAll(
                 btnCiudades, btnHospitales, btnMedicos, btnAsignaciones,
-                btnPacientes, btnServicios, btnCostos, btnFacturacion, btnReportes
+                btnPacientes, btnServicios, btnHistorial, btnCostos, btnFacturacion, btnReportes
         );
 
         menu.getChildren().addAll(header, menuContainer);

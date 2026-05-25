@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 public class ServicioService extends HttpServiceImpl<Object, String> {
 
     /** URL base de la API para Servicios. */
-    private static final String BASE_URL = "http://localhost:8080/services";
+    private static final String BASE_URL = dotenv.get("URL_API_SERVICIO");
 
     /** Instancia única del servicio. */
     private static ServicioService instance;
@@ -133,12 +133,18 @@ public class ServicioService extends HttpServiceImpl<Object, String> {
      * Cuerpo de la petición POST /services.
      * No incluye el código porque el backend lo genera automáticamente.
      * Mapea exactamente el ServicioRequest del backend.
+     *
+     * <p>Los campos {@code procedimiento}, {@code resultados} y {@code codigoHistorial}
+     * son opcionales: pueden ser {@code null}.</p>
      */
     public record ServicioCreateBody(
             String nombre,
             String descripcion,
             Integer idTipoServicio,
-            BigDecimal precio
+            BigDecimal precio,
+            String procedimiento,
+            String resultados,
+            String codigoHistorial
     ) {}
 
     /**
