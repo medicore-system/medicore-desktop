@@ -35,7 +35,6 @@ public class LoginView extends StackPane {
         configurarCallbacks(stage);
     }
 
-    // ── Construcción de la UI ──────────────────────────────────────────────
 
     private void construirUI() {
         // Tarjeta

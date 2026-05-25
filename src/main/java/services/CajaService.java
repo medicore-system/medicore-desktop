@@ -2,6 +2,7 @@ package services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import models.FacturaCajaModel;
+import models.auth.SessionManager;
 import services.http.HttpServiceImpl;
 
 import java.net.URI;
@@ -39,6 +40,7 @@ public class CajaService extends HttpServiceImpl<Object, String> {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/pagar/" + codigoFactura))
                 .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + SessionManager.getInstance().getToken())
                 .POST(HttpRequest.BodyPublishers.noBody()) // Es un POST vacío
                 .build();
 
