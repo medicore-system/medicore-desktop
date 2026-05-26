@@ -6,7 +6,7 @@ import services.http.HttpServiceImpl;
 import java.util.concurrent.CompletableFuture;
 
 public class AuthService extends HttpServiceImpl<Object, String> {
-    private static final String BASE_URL = dotenv.get("URL_API_AUTH");
+    private static final String BASE_URL = dotenv.get("URL_API_AUTH","http://localhost:8080/auth/login");
     private static AuthService instance;
 
     private AuthService() {

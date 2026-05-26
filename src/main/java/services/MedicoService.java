@@ -21,7 +21,7 @@ public class MedicoService extends HttpServiceImpl<Object, String> {
     /**
      * URL base del servicio de médicos.
      */
-    private static final String BASE_URL = dotenv.get("URL_API_MEDICO");
+    private static final String BASE_URL = dotenv.get("URL_API_MEDICO","http://localhost:8080/medicos");
 
     /**
      * Instancia única del servicio.

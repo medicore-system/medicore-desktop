@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class ReporteService extends HttpServiceImpl<Object, String> {
 
-  private static final String BASE_URL = dotenv.get("URL_API_REPORTE");
+  private static final String BASE_URL = dotenv.get("URL_API_REPORTE","http://localhost:8080/api/reportes");
   private static ReporteService instance;
 
   private ReporteService() {
